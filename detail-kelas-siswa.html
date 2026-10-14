@@ -35,7 +35,7 @@
     </div>
 
     <script>
-        // GANTI DENGAN URL WEB APP BARU ANDA
+        // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
         let currentUser = null;
         const urlParams = new URLSearchParams(window.location.search);
@@ -45,9 +45,11 @@
             if (!localStorage.getItem('lms_user') || JSON.parse(localStorage.getItem('lms_user')).role !== 'Siswa') return window.location.href = 'index.html';
             currentUser = JSON.parse(localStorage.getItem('lms_user'));
             document.getElementById('namaKelasTitle').innerText = urlParams.get('nama') || "Detail Kelas";
-            muatDaftarMateri(); muatTugasSiswa();
+            muatDaftarMateri(); 
+            muatTugasSiswa();
         };
 
+        // --- MUAT MATERI DENGAN EMBED OTOMATIS (YOUTUBE / DRIVE / PDF) ---
         async function muatDaftarMateri() {
             const container = document.getElementById('daftarMateriContainer');
             try {
@@ -57,13 +59,78 @@
                     container.innerHTML = '';
                     result.data.forEach(materi => {
                         const tgl = new Date(materi.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' });
-                        let linkHTML = materi.file_url ? `<a href="${materi.file_url}" target="_blank" class="mt-3 inline-flex text-sm text-sky-400 bg-sky-900/30 px-3 py-1.5 rounded-lg border border-sky-500/30">Buka Lampiran</a>` : '';
-                        container.innerHTML += `<div class="glass-panel rounded-2xl p-5 border border-emerald-500/30"><h3 class="text-lg font-semibold text-white mb-1">${materi.judul_materi}</h3><p class="text-xs text-slate-400 mb-2">Diposting: ${tgl}</p><p class="text-sm text-slate-300">${materi.deskripsi}</p>${linkHTML}</div>`;
+                        let embedHTML = '';
+
+                        if (materi.file_url) {
+                            let url = materi.file_url;
+                            
+                            // 1. Deteksi Tautan YouTube (Dilengkapi atribut izin agar tidak terjadi error konfigurasi)
+                            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                                let videoId = '';
+                                if (url.includes('youtu.be/')) {
+                                    videoId = url.split('youtu.be/')[1].split('?')[0];
+                                } else if (url.includes('watch?v=')) {
+                                    videoId = url.split('watch?v=')[1].split('&')[0];
+                                }
+                                if (videoId) {
+                                    embedHTML = `
+                                        <div class="mt-4 relative w-full overflow-hidden rounded-xl shadow-lg" style="padding-top: 56.25%;">
+                                            <iframe class="absolute top-0 left-0 w-full h-full border-0 rounded-xl" 
+                                                src="https://www.youtube.com/embed/${videoId}" 
+                                                title="YouTube video player" 
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                                allowfullscreen>
+                                            </iframe>
+                                        </div>
+                                    `;
+                                }
+                            } 
+                            // 2. Deteksi Google Drive / Dokumen / PDF
+                            else if (url.includes('drive.google.com')) {
+                                let embedUrl = url;
+                                if (url.includes('/view')) {
+                                    embedUrl = url.replace('/view', '/preview');
+                                }
+                                embedHTML = `
+                                    <div class="mt-4 w-full h-64 md:h-96 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-inner">
+                                        <iframe src="${embedUrl}" class="w-full h-full border-0"></iframe>
+                                    </div>
+                                    <div class="mt-2 text-right">
+                                        <a href="${url}" target="_blank" class="text-xs text-sky-400 hover:underline inline-flex items-center gap-1">Buka di Tab Baru ↗</a>
+                                    </div>
+                                `;
+                            } 
+                            // 3. Tautan Web Umum Lainnya
+                            else {
+                                embedHTML = `
+                                    <div class="mt-4 w-full h-64 md:h-80 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-inner">
+                                        <iframe src="${url}" class="w-full h-full border-0"></iframe>
+                                    </div>
+                                    <div class="mt-2 text-right">
+                                        <a href="${url}" target="_blank" class="text-xs text-sky-400 hover:underline inline-flex items-center gap-1">Buka Tautan Penuh ↗</a>
+                                    </div>
+                                `;
+                            }
+                        }
+
+                        container.innerHTML += `
+                            <div class="glass-panel rounded-2xl p-5 border border-emerald-500/30 mb-4">
+                                <h3 class="text-lg font-semibold text-white mb-1">${materi.judul_materi}</h3>
+                                <p class="text-xs text-slate-400 mb-2">Diposting: ${tgl}</p>
+                                <p class="text-sm text-slate-300 mb-2">${materi.deskripsi || ''}</p>
+                                ${embedHTML}
+                            </div>
+                        `;
                     });
-                } else container.innerHTML = `<div class="glass-panel rounded-2xl p-6 text-center text-slate-500 border border-slate-700 border-dashed">Belum ada materi.</div>`;
-            } catch (e) { container.innerHTML = `<div class="text-red-400 text-center">Gagal memuat materi.</div>`; }
+                } else {
+                    container.innerHTML = `<div class="glass-panel rounded-2xl p-6 text-center text-slate-500 border border-slate-700 border-dashed">Belum ada materi.</div>`;
+                }
+            } catch (e) { 
+                container.innerHTML = `<div class="text-red-400 text-center">Gagal memuat materi.</div>`; 
+            }
         }
 
+        // --- MUAT TUGAS & TIMER COUNTDOWN ---
         async function muatTugasSiswa() {
             const container = document.getElementById('daftarTugasContainer');
             try {
@@ -72,52 +139,106 @@
                 if (result.status === 'success' && result.data.length > 0) {
                     container.innerHTML = '';
                     result.data.forEach(tugas => {
-                        const tgl = new Date(tugas.tenggat_waktu).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
+                        const deadlineDate = new Date(tugas.tenggat_waktu);
+                        const now = new Date();
+                        const isExpired = now > deadlineDate;
                         const isSubmitted = tugas.status === "Sudah Mengumpulkan";
-                        const bgStatus = isSubmitted ? "bg-emerald-900/20 border-emerald-500/50" : "bg-slate-800/40 border-slate-700";
+                        
+                        const tglFormat = deadlineDate.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
+                        const bgStatus = isSubmitted ? "bg-emerald-900/20 border-emerald-500/50" : (isExpired ? "bg-rose-950/20 border-rose-500/40" : "bg-slate-800/40 border-slate-700");
                         
                         let lampiranTugasGuru = tugas.file_url ? `<a href="${tugas.file_url}" target="_blank" class="block mt-2 text-xs text-sky-400 hover:underline">Lihat Lampiran Tugas</a>` : '';
                         
-                        let submissionHTML = isSubmitted ? `<div class="mt-3 pt-3 border-t border-slate-700/50"><div class="text-sm text-slate-300 mb-2">Terkirim: <a href="${tugas.submitted_url}" target="_blank" class="text-sky-400 hover:underline break-all">Lihat File / Tautan</a></div><div class="flex items-center gap-3"><span class="bg-slate-900 px-3 py-1 rounded border border-slate-700 text-sm font-bold text-white">Nilai: ${tugas.nilai}</span><button onclick="document.getElementById('form_${tugas.assignment_id}').classList.toggle('hidden')" class="text-xs text-sky-400 hover:underline">Perbaiki Tugas</button></div></div>` : "";
+                        let submissionHTML = isSubmitted ? `<div class="mt-3 pt-3 border-t border-slate-700/50"><div class="text-sm text-slate-300 mb-2">Terkirim: <a href="${tugas.submitted_url}" target="_blank" class="text-sky-400 hover:underline break-all">Lihat File / Tautan</a></div><div class="flex items-center justify-between"><span class="bg-slate-900 px-3 py-1 rounded border border-slate-700 text-sm font-bold text-white">Nilai: ${tugas.nilai}</span>${!isExpired ? `<button onclick="document.getElementById('form_${tugas.assignment_id}').classList.toggle('hidden')" class="text-xs text-sky-400 hover:underline cursor-pointer">Perbaiki Tugas</button>` : '<span class="text-xs text-slate-500">Tenggat lewat (Tidak bisa ubah)</span>'}</div></div>` : "";
                         
-                        const formHTML = `
-                            <form id="form_${tugas.assignment_id}" class="mt-4 pt-4 border-t border-slate-700/50 ${isSubmitted ? 'hidden' : ''}" onsubmit="kirimTugas(event, '${tugas.assignment_id}')">
-                                <label class="block text-xs font-medium text-slate-300 mb-1">Metode Pengumpulan</label>
-                                <select id="metode_${tugas.assignment_id}" onchange="toggleMetode('${tugas.assignment_id}')" class="w-full bg-slate-900 border border-slate-700 rounded text-sm px-3 py-2 text-white neon-input mb-3">
-                                    <option value="link">Tautan (Link Drive / YouTube / Web)</option>
-                                    <option value="file">Upload File (PDF / Gambar / Doc)</option>
-                                </select>
-                                
-                                <div id="div_link_${tugas.assignment_id}">
-                                    <input type="url" id="url_${tugas.assignment_id}" class="w-full bg-slate-900 border border-slate-700 rounded text-sm px-3 py-2 text-white neon-input mb-4" placeholder="Masukkan Tautan (https://...)">
+                        let formHTML = "";
+                        if (isExpired && !isSubmitted) {
+                            formHTML = `<div class="mt-4 pt-4 border-t border-rose-500/20 text-center"><span class="text-xs text-rose-400 font-semibold">❌ Waktu pengumpulan telah berakhir. Anda tidak dapat mengumpulkan tugas ini.</span></div>`;
+                        } else {
+                            formHTML = `
+                                <form id="form_${tugas.assignment_id}" class="mt-4 pt-4 border-t border-slate-700/50 ${isSubmitted ? 'hidden' : ''}" onsubmit="kirimTugas(event, '${tugas.assignment_id}', '${tugas.tenggat_waktu}')">
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Metode Pengumpulan</label>
+                                    <select id="metode_${tugas.assignment_id}" onchange="toggleMetode('${tugas.assignment_id}')" class="w-full bg-slate-900 border border-slate-700 rounded text-sm px-3 py-2 text-white neon-input mb-3">
+                                        <option value="link">Tautan (Link Drive / YouTube / Web)</option>
+                                        <option value="file">Upload File (PDF / Gambar / Doc)</option>
+                                    </select>
+                                    
+                                    <div id="div_link_${tugas.assignment_id}">
+                                        <input type="url" id="url_${tugas.assignment_id}" class="w-full bg-slate-900 border border-slate-700 rounded text-sm px-3 py-2 text-white neon-input mb-4" placeholder="Masukkan Tautan (https://...)">
+                                    </div>
+                                    
+                                    <div id="div_file_${tugas.assignment_id}" class="hidden">
+                                        <input type="file" id="file_${tugas.assignment_id}" class="w-full bg-slate-900 border border-slate-700 rounded text-sm px-3 py-1.5 text-white neon-input mb-1" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                        <div class="text-[11px] text-amber-400 mb-4">* Maksimal ukuran file dibatasi 200 KB.</div>
+                                    </div>
+                                    
+                                    <button type="submit" id="btn_${tugas.assignment_id}" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold py-2 rounded text-sm transition-colors shadow-[0_0_10px_rgba(56,189,248,0.3)] cursor-pointer">Kumpulkan Tugas</button>
+                                </form>
+                            `;
+                        }
+
+                        let badgeStatusText = isSubmitted ? 'Sudah Mengumpulkan' : (isExpired ? 'Waktu Habis' : 'Belum Mengumpulkan');
+                        let badgeColor = isSubmitted ? 'text-emerald-400 bg-emerald-950/40 border-emerald-500/30' : (isExpired ? 'text-rose-400 bg-rose-950/40 border-rose-500/30' : 'text-amber-400 bg-amber-950/40 border-amber-500/30');
+
+                        container.innerHTML += `
+                            <div class="glass-panel rounded-2xl p-5 border ${bgStatus} mb-4">
+                                <div class="flex justify-between items-start gap-2 mb-2">
+                                    <h3 class="font-semibold text-white">${tugas.judul_tugas}</h3>
+                                    <span class="text-xs px-2.5 py-1 rounded border ${badgeColor} whitespace-nowrap">${badgeStatusText}</span>
                                 </div>
-                                
-                                <div id="div_file_${tugas.assignment_id}" class="hidden">
-                                    <input type="file" id="file_${tugas.assignment_id}" class="w-full bg-slate-900 border border-slate-700 rounded text-sm px-3 py-1.5 text-white neon-input mb-1" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-                                    <div class="text-[11px] text-amber-400 mb-4">* Maksimal ukuran file dibatasi 200 KB.</div>
-                                </div>
-                                
-                                <button type="submit" id="btn_${tugas.assignment_id}" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold py-2 rounded text-sm transition-colors shadow-[0_0_10px_rgba(56,189,248,0.3)]">Kumpulkan Tugas</button>
-                            </form>
-                        `;
-                        
-                        container.innerHTML += `<div class="glass-panel rounded-2xl p-5 border ${bgStatus}"><div class="flex justify-between items-start mb-2"><h3 class="font-semibold text-white">${tugas.judul_tugas}</h3><span class="text-xs px-2 py-1 rounded bg-slate-900/50 ${isSubmitted ? 'text-emerald-400' : 'text-rose-400'}">${tugas.status}</span></div><p class="text-xs text-slate-400 mb-1">Tenggat: ${tgl}</p>${lampiranTugasGuru}${submissionHTML}${formHTML}</div>`;
+                                <p class="text-xs text-slate-400 mb-1">Tenggat: ${tglFormat}</p>
+                                <p class="text-xs font-mono font-medium text-sky-300 mb-3" id="timer_${tugas.assignment_id}" data-deadline="${tugas.tenggat_waktu}">Menghitung sisa waktu...</p>
+                                ${lampiranTugasGuru}${submissionHTML}${formHTML}
+                            </div>`;
                     });
-                } else container.innerHTML = `<div class="glass-panel rounded-2xl p-6 text-center text-slate-500 border border-slate-700 border-dashed">Belum ada tugas.</div>`;
-            } catch (e) { container.innerHTML = `<div class="text-red-400 text-center">Gagal memuat tugas.</div>`; }
+
+                    mulaiTimerTugas();
+                } else {
+                    container.innerHTML = `<div class="glass-panel rounded-2xl p-6 text-center text-slate-500 border border-slate-700 border-dashed">Belum ada tugas.</div>`;
+                }
+            } catch (e) { 
+                container.innerHTML = `<div class="text-red-400 text-center">Gagal memuat tugas.</div>`; 
+            }
         }
 
-        // Fungsi toggle tampilan Tautan vs File
+        // --- LIVE COUNTDOWN TIMER ---
+        function mulaiTimerTugas() {
+            setInterval(() => {
+                const timerElements = document.querySelectorAll('[id^="timer_"]');
+                timerElements.forEach(el => {
+                    const deadlineStr = el.getAttribute('data-deadline');
+                    const deadline = new Date(deadlineStr).getTime();
+                    const now = new Date().getTime();
+                    const distance = deadline - now;
+
+                    if (distance < 0) {
+                        el.innerHTML = "🔴 Waktu pengumpulan telah berakhir";
+                        el.className = "text-xs font-mono font-medium text-rose-400 mb-3";
+                    } else {
+                        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                        let timeString = "⏳ Sisa waktu: ";
+                        if (days > 0) timeString += `${days} hari `;
+                        timeString += `${hours}j ${minutes}m ${seconds}d`;
+                        el.innerHTML = timeString;
+                    }
+                });
+            }, 1000);
+        }
+
         function toggleMetode(assignmentId) {
             const metode = document.getElementById(`metode_${assignmentId}`).value;
             if (metode === 'link') {
                 document.getElementById(`div_link_${assignmentId}`).classList.remove('hidden');
                 document.getElementById(`div_file_${assignmentId}`).classList.add('hidden');
-                document.getElementById(`file_${assignmentId}`).value = ''; // Reset file
+                document.getElementById(`file_${assignmentId}`).value = ''; 
             } else {
                 document.getElementById(`div_link_${assignmentId}`).classList.add('hidden');
                 document.getElementById(`div_file_${assignmentId}`).classList.remove('hidden');
-                document.getElementById(`url_${assignmentId}`).value = ''; // Reset url
+                document.getElementById(`url_${assignmentId}`).value = ''; 
             }
         }
 
@@ -130,8 +251,13 @@
             });
         }
 
-        async function kirimTugas(e, assignmentId) {
+        async function kirimTugas(e, assignmentId, tenggatWaktu) {
             e.preventDefault(); 
+            
+            if (new Date() > new Date(tenggatWaktu)) {
+                return alert("Gagal: Tenggat waktu pengumpulan tugas ini sudah berakhir!");
+            }
+
             const btn = document.getElementById(`btn_${assignmentId}`); 
             const metode = document.getElementById(`metode_${assignmentId}`).value;
             const inputUrl = document.getElementById(`url_${assignmentId}`).value;
@@ -143,7 +269,6 @@
                 student_id: currentUser.user_id
             };
 
-            // Validasi berdasarkan metode yang dipilih
             if (metode === 'link') {
                 if (!inputUrl) return alert("Anda belum memasukkan Tautan tugas!");
                 payloadData.file_url = inputUrl;
@@ -151,7 +276,6 @@
                 if (inputFile.files.length === 0) return alert("Anda belum memilih file untuk diunggah!");
                 const file = inputFile.files[0];
                 
-                // VALIDASI UKURAN FILE (Maks 200 KB / 204800 bytes)
                 if (file.size > 204800) {
                     return alert(`Ukuran file Anda ${(file.size / 1024).toFixed(1)} KB. Melebihi batas maksimal 200 KB! Silakan kompres file Anda.`);
                 }
