@@ -65,7 +65,7 @@
                     <input type="datetime-local" id="tenggat_waktu" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all" style="color-scheme: dark;">
                 </div>
                 
-                <button type="submit" id="btnSubmitPostingan" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-[0_0_15px_rgba(56,189,248,0.4)]">Posting ke Kelas</button>
+                <button type="submit" id="btnSubmitPostingan" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-[0_0_15px_rgba(56,189,248,0.4)] cursor-pointer">Posting ke Kelas</button>
             </form>
         </div>
 
@@ -90,7 +90,7 @@
                 <input type="hidden" id="edit_assignment_id">
                 <div class="mb-4"><label class="block text-sm text-slate-300 mb-1">Judul Tugas</label><textarea id="edit_judul_tugas" rows="2" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber"></textarea></div>
                 <div class="mb-6"><label class="block text-sm text-slate-300 mb-1">Tenggat Waktu</label><input type="datetime-local" id="edit_tenggat_waktu" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber" style="color-scheme: dark;"></div>
-                <div class="flex gap-3"><button type="button" onclick="document.getElementById('modalEditTugas').classList.add('hidden')" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg">Batal</button><button type="submit" id="btnSimpanEdit" class="w-1/2 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-lg">Simpan</button></div>
+                <div class="flex gap-3"><button type="button" onclick="document.getElementById('modalEditTugas').classList.add('hidden')" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg cursor-pointer">Batal</button><button type="submit" id="btnSimpanEdit" class="w-1/2 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-lg cursor-pointer">Simpan</button></div>
             </form>
         </div>
     </div>
@@ -104,23 +104,49 @@
                 <div class="mb-4"><label class="block text-sm text-slate-300 mb-1">Judul Materi</label><input type="text" id="edit_judul_materi" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber"></div>
                 <div class="mb-4"><label class="block text-sm text-slate-300 mb-1">Deskripsi</label><textarea id="edit_deskripsi_materi" rows="3" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber"></textarea></div>
                 <div class="mb-6"><label class="block text-sm text-slate-300 mb-1">Ganti Tautan (Kosongkan jika tetap)</label><input type="url" id="edit_link_materi" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber"></div>
-                <div class="flex gap-3"><button type="button" onclick="document.getElementById('modalEditMateri').classList.add('hidden')" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg">Batal</button><button type="submit" id="btnSimpanEditMateri" class="w-1/2 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-lg">Simpan</button></div>
+                <div class="flex gap-3"><button type="button" onclick="document.getElementById('modalEditMateri').classList.add('hidden')" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg cursor-pointer">Batal</button><button type="submit" id="btnSimpanEditMateri" class="w-1/2 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-lg cursor-pointer">Simpan</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Transfer Konten ke Kelas Lain -->
+    <div id="modalTransfer" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel rounded-2xl p-6 w-full max-w-md border border-sky-500/30">
+            <h2 class="text-xl font-bold mb-2 text-white" id="transferModalTitle">Transfer Konten</h2>
+            <p class="text-xs text-slate-400 mb-4">Pilih kelas tujuan untuk menyalin materi/tugas ini.</p>
+            <form onsubmit="prosesTransfer(event)">
+                <input type="hidden" id="transfer_tipe">
+                <input type="hidden" id="transfer_judul">
+                <input type="hidden" id="transfer_deskripsi">
+                <input type="hidden" id="transfer_link">
+                <input type="hidden" id="transfer_tenggat">
+
+                <div class="mb-6">
+                    <label class="block text-sm text-slate-300 mb-1">Kelas Tujuan</label>
+                    <select id="select_kelas_tujuan" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input">
+                        <option value="">Memuat daftar kelas...</option>
+                    </select>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="document.getElementById('modalTransfer').classList.add('hidden')" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg cursor-pointer">Batal</button>
+                    <button type="submit" id="btnProsesTransfer" class="w-1/2 bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2 rounded-lg cursor-pointer shadow-[0_0_10px_rgba(56,189,248,0.3)]">Transfer</button>
+                </div>
             </form>
         </div>
     </div>
 
     <script>
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
+        let currentUser = null;
         const urlParams = new URLSearchParams(window.location.search);
         const classId = urlParams.get('id');
         const namaKelas = urlParams.get('nama') || "Detail Kelas";
 
         window.onload = function() {
             if (!localStorage.getItem('lms_user') || JSON.parse(localStorage.getItem('lms_user')).role !== 'Guru') return window.location.href = 'index.html';
+            currentUser = JSON.parse(localStorage.getItem('lms_user'));
             
             document.getElementById('namaKelasTitle').innerText = namaKelas;
-            
-            // Atur URL tombol rekap tugas siswa agar otomatis membawa parameter ID dan Nama Kelas
             document.getElementById('btnRekapTugas').href = `rekap-tugas-guru.html?id=${classId}&nama=${encodeURIComponent(namaKelas)}`;
             
             muatDaftarMateri(); 
@@ -156,6 +182,7 @@
                         let linkHTML = materi.file_url ? `<a href="${materi.file_url}" target="_blank" class="mt-3 inline-flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 bg-sky-900/30 px-3 py-1.5 rounded-lg border border-sky-500/30 transition-colors">Buka Lampiran</a>` : '';
                         const safeJudul = materi.judul_materi.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         const safeDeskripsi = materi.deskripsi.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const safeUrl = materi.file_url || '';
 
                         container.innerHTML += `
                             <div class="bg-slate-800/40 border border-slate-700 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start gap-4">
@@ -166,8 +193,9 @@
                                     ${linkHTML}
                                 </div>
                                 <div class="flex gap-2 mt-2 md:mt-0 flex-wrap">
-                                    <button onclick="bukaModalEditMateri('${materi.material_id}', '${safeJudul}', '${safeDeskripsi}', '${materi.file_url}')" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded-lg text-sm text-white border border-amber-500/50">Edit</button>
-                                    <button onclick="hapusMateri('${materi.material_id}')" class="bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded-lg text-sm text-white border border-rose-500/50">Hapus</button>
+                                    <button onclick="bukaModalTransfer('materi', '${safeJudul}', '${safeDeskripsi}', '${safeUrl}', '')" class="bg-sky-600 hover:bg-sky-500 px-3 py-2 rounded-lg text-sm text-white cursor-pointer">Transfer</button>
+                                    <button onclick="bukaModalEditMateri('${materi.material_id}', '${safeJudul}', '${safeDeskripsi}', '${materi.file_url}')" class="bg-amber-600 hover:bg-amber-500 px-3 py-2 rounded-lg text-sm text-white border border-amber-500/50 cursor-pointer">Edit</button>
+                                    <button onclick="hapusMateri('${materi.material_id}')" class="bg-rose-600 hover:bg-rose-500 px-3 py-2 rounded-lg text-sm text-white border border-rose-500/50 cursor-pointer">Hapus</button>
                                 </div>
                             </div>`;
                     });
@@ -187,6 +215,7 @@
                         const tglFormat = dateObj.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
                         const isoDate = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
                         const safeJudul = tugas.judul_tugas.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const safeUrl = tugas.file_url || '';
                         let linkHTML = tugas.file_url ? `<a href="${tugas.file_url}" target="_blank" class="mt-2 block text-xs text-sky-400 hover:underline">Lampiran Tugas</a>` : '';
 
                         container.innerHTML += `
@@ -197,14 +226,91 @@
                                     ${linkHTML}
                                 </div>
                                 <div class="flex gap-2 flex-wrap mt-2 md:mt-0">
-                                    <button onclick="bukaModalEditTugas('${tugas.assignment_id}', '${safeJudul}', '${isoDate}')" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded-lg text-sm text-white">Edit</button>
-                                    <button onclick="hapusTugas('${tugas.assignment_id}')" class="bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded-lg text-sm text-white border border-rose-500/50">Hapus</button>
-                                    <a href="penilaian-guru.html?id_tugas=${tugas.assignment_id}&judul_tugas=${encodeURIComponent(tugas.judul_tugas)}" class="bg-sky-600 hover:bg-sky-500 px-4 py-2 rounded-lg text-sm text-white">Lihat Pengumpulan</a>
+                                    <button onclick="bukaModalTransfer('tugas', '${safeJudul}', '', '${safeUrl}', '${tugas.tenggat_waktu}')" class="bg-sky-600 hover:bg-sky-500 px-3 py-2 rounded-lg text-sm text-white cursor-pointer">Transfer</button>
+                                    <button onclick="bukaModalEditTugas('${tugas.assignment_id}', '${safeJudul}', '${isoDate}')" class="bg-amber-600 hover:bg-amber-500 px-3 py-2 rounded-lg text-sm text-white cursor-pointer">Edit</button>
+                                    <button onclick="hapusTugas('${tugas.assignment_id}')" class="bg-rose-600 hover:bg-rose-500 px-3 py-2 rounded-lg text-sm text-white border border-rose-500/50 cursor-pointer">Hapus</button>
+                                    <a href="penilaian-guru.html?id_tugas=${tugas.assignment_id}&judul_tugas=${encodeURIComponent(tugas.judul_tugas)}" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-lg text-sm text-white">Lihat Pengumpulan</a>
                                 </div>
                             </div>`;
                     });
                 } else container.innerHTML = `<div class="border border-slate-700 border-dashed rounded-xl p-4 text-center text-slate-500">Belum ada tugas.</div>`;
             } catch (e) { container.innerHTML = `<div class="text-red-400 text-center">Gagal memuat tugas.</div>`; }
+        }
+
+        // --- FITUR TRANSFER KONTEN KE KELAS LAIN ---
+        async function bukaModalTransfer(tipe, judul, deskripsi, link, tenggat) {
+            document.getElementById('transfer_tipe').value = tipe;
+            document.getElementById('transfer_judul').value = judul;
+            document.getElementById('transfer_deskripsi').value = deskripsi;
+            document.getElementById('transfer_link').value = link;
+            document.getElementById('transfer_tenggat').value = tenggat;
+            document.getElementById('transferModalTitle').innerText = `Transfer ${tipe === 'materi' ? 'Materi' : 'Tugas'}`;
+
+            const selectKelas = document.getElementById('select_kelas_tujuan');
+            selectKelas.innerHTML = '<option value="">Memuat kelas...</option>';
+            document.getElementById('modalTransfer').classList.remove('hidden');
+
+            try {
+                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_teacher_classes', teacher_id: currentUser.user_id }) });
+                const result = await res.json();
+                if (result.status === 'success' && result.data.length > 0) {
+                    selectKelas.innerHTML = '<option value="">-- Pilih Kelas Tujuan --</option>';
+                    result.data.forEach(kelas => {
+                        // Jangan tampilkan kelas asal saat ini
+                        if (kelas.class_id !== classId) {
+                            selectKelas.innerHTML += `<option value="${kelas.class_id}">${kelas.nama_kelas} (Kode: ${kelas.kode_kelas})</option>`;
+                        }
+                    });
+                    if (selectKelas.options.length <= 1) {
+                        selectKelas.innerHTML = '<option value="">Tidak ada kelas lain tersedia</option>';
+                    }
+                } else {
+                    selectKelas.innerHTML = '<option value="">Gagal memuat daftar kelas</option>';
+                }
+            } catch (e) {
+                selectKelas.innerHTML = '<option value="">Terjadi kesalahan jaringan</option>';
+            }
+        }
+
+        async function prosesTransfer(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnProsesTransfer');
+            const kelasTujuanId = document.getElementById('select_kelas_tujuan').value;
+            if (!kelasTujuanId) return alert("Silakan pilih kelas tujuan!");
+
+            btn.disabled = true;
+            btn.innerHTML = 'Mentransfer...';
+
+            const tipe = document.getElementById('transfer_tipe').value;
+            let payloadData = {
+                class_id: kelasTujuanId,
+                action: tipe === 'materi' ? 'create_material' : 'create_assignment',
+                link_url: document.getElementById('transfer_link').value
+            };
+
+            if (tipe === 'materi') {
+                payloadData.judul_materi = document.getElementById('transfer_judul').value;
+                payloadData.deskripsi = document.getElementById('transfer_deskripsi').value;
+            } else {
+                payloadData.judul_tugas = document.getElementById('transfer_judul').value;
+                payloadData.tenggat_waktu = document.getElementById('transfer_tenggat').value;
+            }
+
+            try {
+                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify(payloadData), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    alert(`Berhasil mentransfer ${tipe === 'materi' ? 'materi' : 'tugas'} ke kelas tujuan!`);
+                    document.getElementById('modalTransfer').classList.add('hidden');
+                } else {
+                    alert(`Gagal: ${result.message}`);
+                }
+            } catch (err) {
+                alert("Terjadi kesalahan jaringan.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Transfer';
+            }
         }
 
         function getBase64(file) {
