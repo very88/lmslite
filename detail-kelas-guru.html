@@ -116,7 +116,7 @@
         const namaKelas = urlParams.get('nama') || "Detail Kelas";
 
         window.onload = function() {
-            if (!localStorage.getItem('lms_user') || JSON.parse(localStorage.getItem('lms_user')).role !== 'Guru') return window.location.href = 'login.html';
+            if (!localStorage.getItem('lms_user') || JSON.parse(localStorage.getItem('lms_user')).role !== 'Guru') return window.location.href = 'index.html';
             
             document.getElementById('namaKelasTitle').innerText = namaKelas;
             

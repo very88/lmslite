@@ -42,7 +42,7 @@
         const classId = urlParams.get('id');
 
         window.onload = function() {
-            if (!localStorage.getItem('lms_user') || JSON.parse(localStorage.getItem('lms_user')).role !== 'Siswa') return window.location.href = 'login.html';
+            if (!localStorage.getItem('lms_user') || JSON.parse(localStorage.getItem('lms_user')).role !== 'Siswa') return window.location.href = 'index.html';
             currentUser = JSON.parse(localStorage.getItem('lms_user'));
             document.getElementById('namaKelasTitle').innerText = urlParams.get('nama') || "Detail Kelas";
             muatDaftarMateri(); muatTugasSiswa();

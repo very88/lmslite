@@ -116,19 +116,19 @@
 
         window.onload = function() {
             const sessionData = localStorage.getItem('lms_user');
-            if (!sessionData) { window.location.href = 'login.html'; return; }
+            if (!sessionData) { window.location.href = 'index.html'; return; }
             
             try {
                 currentUser = JSON.parse(sessionData);
             } catch (e) {
                 localStorage.removeItem('lms_user');
-                window.location.href = 'login.html';
+                window.location.href = 'index.html';
                 return;
             }
 
             if (!currentUser || currentUser.role !== 'Siswa') {
                 alert("Akses ditolak! Halaman ini khusus untuk Siswa.");
-                window.location.href = 'login.html'; 
+                window.location.href = 'index.html'; 
                 return;
             }
 
@@ -142,7 +142,7 @@
 
         function logout() {
             localStorage.removeItem('lms_user');
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
         }
 
         // --- TOGGLE PASSWORD VISIBILITY ---
