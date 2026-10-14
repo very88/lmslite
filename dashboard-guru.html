@@ -91,13 +91,13 @@
         window.onload = function() {
             const sessionData = localStorage.getItem('lms_user');
             if (!sessionData) {
-                window.location.href = 'login.html';
+                window.location.href = 'index.html';
                 return;
             }
             
             currentUser = JSON.parse(sessionData);
             if (currentUser.role !== 'Guru') {
-                window.location.href = 'login.html';
+                window.location.href = 'index.html';
                 return;
             }
 
@@ -107,7 +107,7 @@
 
         function logout() {
             localStorage.removeItem('lms_user');
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
         }
 
         async function muatDaftarKelas() {
