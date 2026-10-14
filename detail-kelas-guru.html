@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Kelas - Guru</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 70%); color: #f8fafc; min-height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
+        .neon-input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+        .neon-input-amber:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Navbar -->
+    <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center flex-wrap gap-4">
+        <div class="flex items-center gap-4">
+            <a href="dashboard-guru.html" class="text-slate-400 hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg></a>
+            <div class="text-xl font-bold text-sky-400" id="namaKelasTitle">Memuat Kelas...</div>
+        </div>
+        <div class="flex items-center gap-3">
+            <!-- TOMBOL MENU PEMANTAUAN REKAP TUGAS SISWA -->
+            <a id="btnRekapTugas" href="#" class="bg-sky-600 hover:bg-sky-500 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-[0_0_10px_rgba(56,189,248,0.3)]">
+                📊 Rekap Tugas Siswa
+            </a>
+            <div class="text-sm text-slate-300">Mode Guru</div>
+        </div>
+    </nav>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Panel Kiri: Form Serbaguna -->
+        <div class="glass-panel rounded-2xl p-6 md:col-span-1 h-fit">
+            <h2 class="text-xl font-bold mb-4 text-white flex items-center gap-2">Buat Postingan Baru</h2>
+            
+            <form id="formBuatPostingan" onsubmit="buatPostingan(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Tipe Postingan</label>
+                    <select id="tipe_postingan" onchange="toggleFormType()" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all">
+                        <option value="materi">📖 Materi Pembelajaran</option>
+                        <option value="tugas">📝 Tugas Kelas</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-300 mb-1" id="label_judul">Judul Materi</label>
+                    <input type="text" id="judul_postingan" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all" placeholder="Masukkan judul...">
+                </div>
+
+                <div class="mb-4" id="div_deskripsi">
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Deskripsi / Penjelasan</label>
+                    <textarea id="deskripsi_postingan" rows="3" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all" placeholder="Tambahkan penjelasan materi..."></textarea>
+                </div>
+
+                <div class="mb-4" id="div_link">
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Upload File (PDF/Doc/PPT) atau Tautan YouTube</label>
+                    <input type="file" id="file_postingan" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all mb-2 text-sm" accept=".pdf,.doc,.docx,.ppt,.pptx">
+                    <div class="text-center text-xs text-slate-400 my-1">ATAU</div>
+                    <input type="url" id="link_postingan" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all" placeholder="https://youtube.com/...">
+                </div>
+
+                <div class="mb-6 hidden" id="div_tenggat">
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Tenggat Waktu (Deadline)</label>
+                    <input type="datetime-local" id="tenggat_waktu" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all" style="color-scheme: dark;">
+                </div>
+                
+                <button type="submit" id="btnSubmitPostingan" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-[0_0_15px_rgba(56,189,248,0.4)]">Posting ke Kelas</button>
+            </form>
+        </div>
+
+        <!-- Panel Kanan: Daftar Materi & Tugas -->
+        <div class="md:col-span-2">
+            <div class="glass-panel rounded-2xl p-6 mb-8">
+                <h2 class="text-xl font-bold mb-4 text-white">Materi Pembelajaran</h2>
+                <div id="daftarMateriContainer" class="space-y-4"><div class="text-slate-400 text-center py-4">Memuat materi...</div></div>
+            </div>
+            <div class="glass-panel rounded-2xl p-6">
+                <h2 class="text-xl font-bold mb-4 text-white">Daftar Tugas</h2>
+                <div id="daftarTugasContainer" class="space-y-4"><div class="text-slate-400 text-center py-4">Memuat tugas...</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Tugas -->
+    <div id="modalEditTugas" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel rounded-2xl p-6 w-full max-w-md border border-amber-500/30">
+            <h2 class="text-xl font-bold mb-4 text-white">Edit Tugas</h2>
+            <form onsubmit="simpanEditTugas(event)">
+                <input type="hidden" id="edit_assignment_id">
+                <div class="mb-4"><label class="block text-sm text-slate-300 mb-1">Judul Tugas</label><textarea id="edit_judul_tugas" rows="2" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber"></textarea></div>
+                <div class="mb-6"><label class="block text-sm text-slate-300 mb-1">Tenggat Waktu</label><input type="datetime-local" id="edit_tenggat_waktu" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber" style="color-scheme: dark;"></div>
+                <div class="flex gap-3"><button type="button" onclick="document.getElementById('modalEditTugas').classList.add('hidden')" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg">Batal</button><button type="submit" id="btnSimpanEdit" class="w-1/2 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-lg">Simpan</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Edit Materi -->
+    <div id="modalEditMateri" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel rounded-2xl p-6 w-full max-w-md border border-amber-500/30">
+            <h2 class="text-xl font-bold mb-4 text-white">Edit Materi</h2>
+            <form onsubmit="simpanEditMateri(event)">
+                <input type="hidden" id="edit_material_id">
+                <div class="mb-4"><label class="block text-sm text-slate-300 mb-1">Judul Materi</label><input type="text" id="edit_judul_materi" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber"></div>
+                <div class="mb-4"><label class="block text-sm text-slate-300 mb-1">Deskripsi</label><textarea id="edit_deskripsi_materi" rows="3" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber"></textarea></div>
+                <div class="mb-6"><label class="block text-sm text-slate-300 mb-1">Ganti Tautan (Kosongkan jika tetap)</label><input type="url" id="edit_link_materi" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber"></div>
+                <div class="flex gap-3"><button type="button" onclick="document.getElementById('modalEditMateri').classList.add('hidden')" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg">Batal</button><button type="submit" id="btnSimpanEditMateri" class="w-1/2 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-lg">Simpan</button></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
+        const urlParams = new URLSearchParams(window.location.search);
+        const classId = urlParams.get('id');
+        const namaKelas = urlParams.get('nama') || "Detail Kelas";
+
+        window.onload = function() {
+            if (!localStorage.getItem('lms_user') || JSON.parse(localStorage.getItem('lms_user')).role !== 'Guru') return window.location.href = 'login.html';
+            
+            document.getElementById('namaKelasTitle').innerText = namaKelas;
+            
+            // Atur URL tombol rekap tugas siswa agar otomatis membawa parameter ID dan Nama Kelas
+            document.getElementById('btnRekapTugas').href = `rekap-tugas-guru.html?id=${classId}&nama=${encodeURIComponent(namaKelas)}`;
+            
+            muatDaftarMateri(); 
+            muatDaftarTugas();
+        };
+
+        function toggleFormType() {
+            const tipe = document.getElementById('tipe_postingan').value;
+            if (tipe === 'materi') {
+                document.getElementById('label_judul').innerText = 'Judul Materi';
+                document.getElementById('div_deskripsi').classList.remove('hidden');
+                document.getElementById('div_link').classList.remove('hidden');
+                document.getElementById('div_tenggat').classList.add('hidden');
+                document.getElementById('tenggat_waktu').required = false;
+            } else {
+                document.getElementById('label_judul').innerText = 'Judul / Instruksi Tugas';
+                document.getElementById('div_deskripsi').classList.add('hidden');
+                document.getElementById('div_link').classList.remove('hidden');
+                document.getElementById('div_tenggat').classList.remove('hidden');
+                document.getElementById('tenggat_waktu').required = true;
+            }
+        }
+
+        async function muatDaftarMateri() {
+            const container = document.getElementById('daftarMateriContainer');
+            try {
+                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_class_materials', class_id: classId }) });
+                const result = await res.json();
+                if (result.status === 'success' && result.data.length > 0) {
+                    container.innerHTML = '';
+                    result.data.forEach(materi => {
+                        const tgl = new Date(materi.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' });
+                        let linkHTML = materi.file_url ? `<a href="${materi.file_url}" target="_blank" class="mt-3 inline-flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 bg-sky-900/30 px-3 py-1.5 rounded-lg border border-sky-500/30 transition-colors">Buka Lampiran</a>` : '';
+                        const safeJudul = materi.judul_materi.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const safeDeskripsi = materi.deskripsi.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                        container.innerHTML += `
+                            <div class="bg-slate-800/40 border border-slate-700 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start gap-4">
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-semibold text-white">${materi.judul_materi}</h3>
+                                    <p class="text-xs text-slate-400 mb-2">Diposting: ${tgl}</p>
+                                    <p class="text-sm text-slate-300">${materi.deskripsi}</p>
+                                    ${linkHTML}
+                                </div>
+                                <div class="flex gap-2 mt-2 md:mt-0 flex-wrap">
+                                    <button onclick="bukaModalEditMateri('${materi.material_id}', '${safeJudul}', '${safeDeskripsi}', '${materi.file_url}')" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded-lg text-sm text-white border border-amber-500/50">Edit</button>
+                                    <button onclick="hapusMateri('${materi.material_id}')" class="bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded-lg text-sm text-white border border-rose-500/50">Hapus</button>
+                                </div>
+                            </div>`;
+                    });
+                } else container.innerHTML = `<div class="border border-slate-700 border-dashed rounded-xl p-4 text-center text-slate-500">Belum ada materi.</div>`;
+            } catch (e) { container.innerHTML = `<div class="text-red-400 text-center">Gagal memuat materi.</div>`; }
+        }
+
+        async function muatDaftarTugas() {
+            const container = document.getElementById('daftarTugasContainer');
+            try {
+                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_class_assignments', class_id: classId }) });
+                const result = await res.json();
+                if (result.status === 'success' && result.data.length > 0) {
+                    container.innerHTML = '';
+                    result.data.forEach(tugas => {
+                        const dateObj = new Date(tugas.tenggat_waktu);
+                        const tglFormat = dateObj.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
+                        const isoDate = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                        const safeJudul = tugas.judul_tugas.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        let linkHTML = tugas.file_url ? `<a href="${tugas.file_url}" target="_blank" class="mt-2 block text-xs text-sky-400 hover:underline">Lampiran Tugas</a>` : '';
+
+                        container.innerHTML += `
+                            <div class="bg-slate-800/40 border border-slate-700 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-semibold text-white">${tugas.judul_tugas}</h3>
+                                    <p class="text-sm text-rose-400">Tenggat: ${tglFormat}</p>
+                                    ${linkHTML}
+                                </div>
+                                <div class="flex gap-2 flex-wrap mt-2 md:mt-0">
+                                    <button onclick="bukaModalEditTugas('${tugas.assignment_id}', '${safeJudul}', '${isoDate}')" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded-lg text-sm text-white">Edit</button>
+                                    <button onclick="hapusTugas('${tugas.assignment_id}')" class="bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded-lg text-sm text-white border border-rose-500/50">Hapus</button>
+                                    <a href="penilaian-guru.html?id_tugas=${tugas.assignment_id}&judul_tugas=${encodeURIComponent(tugas.judul_tugas)}" class="bg-sky-600 hover:bg-sky-500 px-4 py-2 rounded-lg text-sm text-white">Lihat Pengumpulan</a>
+                                </div>
+                            </div>`;
+                    });
+                } else container.innerHTML = `<div class="border border-slate-700 border-dashed rounded-xl p-4 text-center text-slate-500">Belum ada tugas.</div>`;
+            } catch (e) { container.innerHTML = `<div class="text-red-400 text-center">Gagal memuat tugas.</div>`; }
+        }
+
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function buatPostingan(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSubmitPostingan');
+            btn.disabled = true; btn.innerHTML = 'Memproses...';
+
+            const tipe = document.getElementById('tipe_postingan').value;
+            const fileInput = document.getElementById('file_postingan');
+            
+            let payloadData = { class_id: classId, action: tipe === 'tugas' ? 'create_assignment' : 'create_material', link_url: document.getElementById('link_postingan').value };
+            
+            if (tipe === 'tugas') {
+                payloadData.judul_tugas = document.getElementById('judul_postingan').value;
+                payloadData.tenggat_waktu = document.getElementById('tenggat_waktu').value;
+            } else {
+                payloadData.judul_materi = document.getElementById('judul_postingan').value;
+                payloadData.deskripsi = document.getElementById('deskripsi_postingan').value;
+            }
+
+            try {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    if (file.size > 5 * 1024 * 1024) throw new Error("Ukuran file maksimal 5MB");
+                    payloadData.file_data = await getBase64(file);
+                    payloadData.file_name = file.name;
+                    payloadData.mime_type = file.type;
+                }
+
+                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify(payloadData), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    document.getElementById('formBuatPostingan').reset();
+                    toggleFormType(); 
+                    tipe === 'tugas' ? muatDaftarTugas() : muatDaftarMateri(); 
+                } else alert(`Gagal: ${result.message}`);
+            } catch (e) { alert(e.message || "Kesalahan jaringan."); } 
+            finally { btn.disabled = false; btn.innerHTML = 'Posting ke Kelas'; }
+        }
+
+        function bukaModalEditTugas(id, judul, tenggat) { document.getElementById('edit_assignment_id').value = id; document.getElementById('edit_judul_tugas').value = judul; document.getElementById('edit_tenggat_waktu').value = tenggat; document.getElementById('modalEditTugas').classList.remove('hidden'); }
+        async function simpanEditTugas(e) {
+            e.preventDefault(); const btn = document.getElementById('btnSimpanEdit'); btn.disabled = true;
+            try {
+                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'edit_assignment', assignment_id: document.getElementById('edit_assignment_id').value, judul_tugas: document.getElementById('edit_judul_tugas').value, tenggat_waktu: document.getElementById('edit_tenggat_waktu').value }) });
+                const result = await res.json();
+                if (result.status === 'success') { document.getElementById('modalEditTugas').classList.add('hidden'); muatDaftarTugas(); }
+            } catch (err) {} finally { btn.disabled = false; }
+        }
+
+        function bukaModalEditMateri(id, judul, deskripsi, link) { document.getElementById('edit_material_id').value = id; document.getElementById('edit_judul_materi').value = judul; document.getElementById('edit_deskripsi_materi').value = deskripsi; document.getElementById('modalEditMateri').classList.remove('hidden'); }
+        async function simpanEditMateri(e) {
+            e.preventDefault(); const btn = document.getElementById('btnSimpanEditMateri'); btn.disabled = true;
+            try {
+                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'edit_material', material_id: document.getElementById('edit_material_id').value, judul_materi: document.getElementById('edit_judul_materi').value, deskripsi: document.getElementById('edit_deskripsi_materi').value, link_url: document.getElementById('edit_link_materi').value }) });
+                const result = await res.json();
+                if (result.status === 'success') { document.getElementById('modalEditMateri').classList.add('hidden'); muatDaftarMateri(); }
+            } catch (err) {} finally { btn.disabled = false; }
+        }
+
+        async function hapusMateri(id) {
+            if (!confirm('Apakah Anda yakin ingin menghapus materi ini?')) return;
+            try {
+                const res = await fetch(scriptURL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: 'delete_material', material_id: id }) 
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    muatDaftarMateri();
+                } else {
+                    alert(`Gagal menghapus: ${result.message}`);
+                }
+            } catch (e) {
+                alert("Terjadi kesalahan jaringan saat menghapus materi.");
+            }
+        }
+
+        async function hapusTugas(id) {
+            if (!confirm('Apakah Anda yakin ingin menghapus tugas ini?')) return;
+            try {
+                const res = await fetch(scriptURL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: 'delete_assignment', assignment_id: id }) 
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    muatDaftarTugas();
+                } else {
+                    alert(`Gagal menghapus: ${result.message}`);
+                }
+            } catch (e) {
+                alert("Terjadi kesalahan jaringan saat menghapus tugas.");
+            }
+        }
+    </script>
+</body>
+</html>

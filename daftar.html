@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendaftaran LMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 70%);
+            color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        .neon-input:focus {
+            outline: none; border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="glass-panel rounded-2xl p-8 w-full max-w-md mb-4">
+        <h2 class="text-2xl font-bold mb-6 text-center text-sky-400">Daftar Akun LMS</h2>
+        <form id="formPendaftaran" onsubmit="daftarSiswa(event)">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-slate-300 mb-1">Nama Lengkap</label>
+                <input type="text" id="nama_lengkap" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-slate-300 mb-1">Email</label>
+                <input type="email" id="email" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-slate-300 mb-1">Password</label>
+                <div class="relative">
+                    <input type="password" id="password" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 pr-10 text-white neon-input transition-all">
+                    <!-- Toggle Password Button (Flat & Minimalis) -->
+                    <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-white transition-colors focus:outline-none cursor-pointer">
+                        <svg id="iconMata" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-300 mb-1">Peran Pengguna</label>
+                <select id="role" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all">
+                    <option value="Siswa">Siswa</option>
+                    <option value="Guru">Guru</option>
+                </select>
+            </div>
+            <button type="submit" id="btnSubmit" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer shadow-[0_0_15px_rgba(56,189,248,0.4)]">Daftar Sekarang</button>
+            <p class="mt-4 text-center text-sm text-slate-400">Sudah punya akun? <a href="login.html" class="text-sky-400 hover:underline">Masuk</a></p>
+            <div id="statusPesan" class="mt-4 text-center text-sm hidden"></div>
+        </form>
+    </div>
+
+    <!-- Copyright Footer -->
+    <footer class="text-center text-xs text-slate-500 tracking-wide">
+        &copy; 2026 Very_Andika All Right Reserved
+    </footer>
+
+    <script>
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
+
+        // --- TOGGLE PASSWORD VISIBILITY ---
+        function togglePasswordVisibility() {
+            const inputPass = document.getElementById('password');
+            const iconMata = document.getElementById('iconMata');
+            
+            if (inputPass.type === 'password') {
+                inputPass.type = 'text';
+                iconMata.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                `;
+            } else {
+                inputPass.type = 'password';
+                iconMata.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                `;
+            }
+        }
+
+        async function daftarSiswa(event) {
+            event.preventDefault();
+            const btnSubmit = document.getElementById('btnSubmit');
+            const statusDiv = document.getElementById('statusPesan');
+            
+            btnSubmit.disabled = true; btnSubmit.innerHTML = 'Memproses...';
+            statusDiv.classList.add('hidden');
+
+            const payloadData = {
+                action: 'register',
+                nama_lengkap: document.getElementById('nama_lengkap').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                role: document.getElementById('role').value
+            };
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST', body: JSON.stringify(payloadData),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await response.json();
+                
+                statusDiv.classList.remove('hidden');
+                if (result.status === 'success') {
+                    statusDiv.innerHTML = `✅ ${result.message}`;
+                    statusDiv.className = "mt-4 text-center text-sm text-green-400";
+                    document.getElementById('formPendaftaran').reset();
+                    document.getElementById('password').type = 'password'; // Reset ikon mata
+                } else {
+                    statusDiv.innerHTML = `❌ ${result.message}`;
+                    statusDiv.className = "mt-4 text-center text-sm text-red-400";
+                }
+            } catch (error) {
+                statusDiv.classList.remove('hidden');
+                statusDiv.innerHTML = `❌ Terjadi kesalahan jaringan.`;
+                statusDiv.className = "mt-4 text-center text-sm text-red-400";
+            } finally {
+                btnSubmit.disabled = false; btnSubmit.innerHTML = 'Daftar Sekarang';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekap Pengumpulan Tugas - Guru</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 70%); color: #f8fafc; min-height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Navbar -->
+    <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <a id="btnKembali" href="#" class="text-slate-400 hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg></a>
+            <div>
+                <div class="text-xs text-sky-400 font-bold uppercase">Pemantauan Tugas Siswa</div>
+                <div class="text-lg font-semibold text-white" id="namaKelasTitle">Memuat...</div>
+            </div>
+        </div>
+        <div class="text-sm text-slate-300">Mode Guru</div>
+    </nav>
+
+    <!-- Konten Tabel Rekap -->
+    <div class="glass-panel rounded-2xl p-6 overflow-x-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-white">Matriks Pengumpulan Tugas</h2>
+            <div class="flex items-center gap-4 text-xs text-slate-300">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Sudah Mengumpulkan</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-slate-700 inline-block"></span> Belum / Kosong</span>
+            </div>
+        </div>
+
+        <div id="tabelContainer">
+            <div class="text-center py-12 text-slate-400">Memuat data rekap kelas...</div>
+        </div>
+    </div>
+
+    <script>
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
+        const urlParams = new URLSearchParams(window.location.search);
+        const classId = urlParams.get('id');
+        const namaKelas = urlParams.get('nama') || 'Detail Kelas';
+
+        window.onload = function() {
+            if (!localStorage.getItem('lms_user') || JSON.parse(localStorage.getItem('lms_user')).role !== 'Guru') {
+                return window.location.href = 'login.html';
+            }
+            
+            document.getElementById('namaKelasTitle').innerText = namaKelas;
+            document.getElementById('btnKembali').href = `detail-kelas-guru.html?id=${classId}&nama=${encodeURIComponent(namaKelas)}`;
+            
+            muatRekapTugas();
+        };
+
+        async function muatRekapTugas() {
+            const container = document.getElementById('tabelContainer');
+            try {
+                const res = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_class_progress', class_id: classId }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await res.json();
+
+                if (result.status === 'success') {
+                    const { assignments, progress } = result.data;
+
+                    if (assignments.length === 0) {
+                        container.innerHTML = `<div class="text-center py-12 text-slate-500 border border-slate-700 border-dashed rounded-xl">Belum ada tugas yang dibuat di kelas ini.</div>`;
+                        return;
+                    }
+
+                    if (progress.length === 0) {
+                        container.innerHTML = `<div class="text-center py-12 text-slate-500 border border-slate-700 border-dashed rounded-xl">Belum ada siswa yang bergabung ke kelas ini.</div>`;
+                        return;
+                    }
+
+                    // Buat Struktur Tabel HTML
+                    let html = `
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-700 text-slate-300 text-sm">
+                                    <th class="py-3 px-4 font-semibold">No</th>
+                                    <th class="py-3 px-4 font-semibold">Nama Siswa</th>
+                    `;
+
+                    // Tambahkan Header Kolom Tugas
+                    assignments.forEach((asn, index) => {
+                        html += `<th class="py-3 px-4 font-semibold text-center max-w-[150px] truncate" title="${asn.judul_tugas}">Tugas ${index + 1}: ${asn.judul_tugas}</th>`;
+                    });
+
+                    html += `</tr></thead><tbody class="divide-y divide-slate-800 text-sm text-slate-200">`;
+
+                    // Baris Data Siswa
+                    progress.forEach((row, idx) => {
+                        html += `
+                            <tr class="hover:bg-slate-800/40 transition-colors">
+                                <td class="py-3.5 px-4 text-slate-400">${idx + 1}</td>
+                                <td class="py-3.5 px-4 font-medium text-white">${row.student_name}</td>
+                        `;
+
+                        // Kolom Ceklis Tugas
+                        assignments.forEach(asn => {
+                            const isSubmitted = row.status[asn.assignment_id];
+                            if (isSubmitted) {
+                                html += `
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]" title="Sudah Mengumpulkan">
+                                            ✓
+                                        </span>
+                                    </td>
+                                `;
+                            } else {
+                                html += `
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-800 text-slate-600 border border-slate-700" title="Belum Mengumpulkan">
+                                            -
+                                        </span>
+                                    </td>
+                                `;
+                            }
+                        });
+
+                        html += `</tr>`;
+                    });
+
+                    html += `</tbody></table>`;
+                    container.innerHTML = html;
+
+                } else {
+                    container.innerHTML = `<div class="text-red-400 text-center py-8">Gagal memuat rekap: ${result.message}</div>`;
+                }
+            } catch (e) {
+                container.innerHTML = `<div class="text-red-400 text-center py-8">Kesalahan jaringan saat memuat rekap tugas.</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Siswa - LMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 70%);
+            color: #f8fafc; min-height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        .neon-input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+        .neon-input-amber:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Navbar -->
+    <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center">
+        <div class="text-xl font-bold text-sky-400">LMS Workspace</div>
+        <div class="flex items-center gap-4">
+            <div class="text-sm text-slate-300">Halo, <span id="namaSiswa" class="font-semibold text-white">Siswa</span></div>
+            <button onclick="logout()" class="bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/50 px-4 py-1.5 rounded-lg text-sm transition-all cursor-pointer">Keluar</button>
+        </div>
+    </nav>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Panel Kiri: Profil & Form Gabung Kelas -->
+        <div class="space-y-6 md:col-span-1">
+            <!-- Card Profil Siswa -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h2 class="text-lg font-bold mb-4 text-white flex items-center gap-2">👤 Profil Akun</h2>
+                <div class="space-y-3 text-sm text-slate-300 mb-5">
+                    <div>
+                        <span class="block text-xs text-slate-400">Nama Lengkap:</span>
+                        <span id="profilNama" class="font-semibold text-white text-base">-</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs text-slate-400">Email:</span>
+                        <span id="profilEmail" class="text-sky-300 break-all">-</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs text-slate-400">ID Pengguna:</span>
+                        <span id="profilId" class="font-mono text-slate-400 text-xs">-</span>
+                    </div>
+                </div>
+                <button onclick="bukaModalEditProfil()" class="w-full bg-amber-600/80 hover:bg-amber-500 text-white text-sm font-semibold py-2 rounded-lg transition-colors border border-amber-500/50 cursor-pointer">
+                    Edit Profil & Password
+                </button>
+            </div>
+
+            <!-- Card Gabung Kelas -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h2 class="text-xl font-bold mb-4 text-white flex items-center gap-2">Gabung Kelas Baru</h2>
+                <form id="formGabungKelas" onsubmit="gabungKelas(event)">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Kode Kelas</label>
+                        <input type="text" id="kode_kelas" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white font-mono uppercase neon-input transition-all" placeholder="Contoh: 8XF2A">
+                    </div>
+                    <button type="submit" id="btnSubmitGabung" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-[0_0_15px_rgba(56,189,248,0.4)] cursor-pointer">Gabung</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Panel Kanan: Daftar Kelas yang Diikuti -->
+        <div class="glass-panel rounded-2xl p-6 md:col-span-2 h-fit">
+            <h2 class="text-xl font-bold mb-4 text-white">Kelas Saya</h2>
+            <div id="daftarKelasContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="text-slate-400 col-span-2 text-center py-8">Memuat kelas...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Profil -->
+    <div id="modalEditProfil" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel rounded-2xl p-6 w-full max-w-md border border-amber-500/30">
+            <h2 class="text-xl font-bold mb-4 text-white">Edit Profil Akun</h2>
+            <form onsubmit="simpanEditProfil(event)">
+                <div class="mb-4">
+                    <label class="block text-sm text-slate-300 mb-1">Email Baru</label>
+                    <input type="email" id="edit_email" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm text-slate-300 mb-1">Password Baru <span class="text-xs text-slate-400">(Kosongkan jika tetap)</span></label>
+                    <div class="relative">
+                        <input type="password" id="edit_password" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 pr-10 text-white neon-input-amber" placeholder="••••••••">
+                        <!-- Toggle Password Button (Flat & Minimalis) -->
+                        <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-white transition-colors focus:outline-none cursor-pointer">
+                            <svg id="iconMata" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="document.getElementById('modalEditProfil').classList.add('hidden')" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg cursor-pointer">Batal</button>
+                    <button type="submit" id="btnSimpanProfil" class="w-1/2 bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2 rounded-lg cursor-pointer">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
+        let currentUser = null;
+
+        window.onload = function() {
+            const sessionData = localStorage.getItem('lms_user');
+            if (!sessionData) { window.location.href = 'login.html'; return; }
+            
+            try {
+                currentUser = JSON.parse(sessionData);
+            } catch (e) {
+                localStorage.removeItem('lms_user');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (!currentUser || currentUser.role !== 'Siswa') {
+                alert("Akses ditolak! Halaman ini khusus untuk Siswa.");
+                window.location.href = 'login.html'; 
+                return;
+            }
+
+            document.getElementById('namaSiswa').innerText = currentUser.nama_lengkap || 'Siswa';
+            document.getElementById('profilNama').innerText = currentUser.nama_lengkap || '-';
+            document.getElementById('profilEmail').innerText = currentUser.email || '-';
+            document.getElementById('profilId').innerText = currentUser.user_id || '-';
+
+            muatKelasSiswa();
+        };
+
+        function logout() {
+            localStorage.removeItem('lms_user');
+            window.location.href = 'login.html';
+        }
+
+        // --- TOGGLE PASSWORD VISIBILITY ---
+        function togglePasswordVisibility() {
+            const inputPass = document.getElementById('edit_password');
+            const iconMata = document.getElementById('iconMata');
+            
+            if (inputPass.type === 'password') {
+                inputPass.type = 'text';
+                iconMata.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                `;
+            } else {
+                inputPass.type = 'password';
+                iconMata.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                `;
+            }
+        }
+
+        function bukaModalEditProfil() {
+            document.getElementById('edit_email').value = currentUser.email || '';
+            document.getElementById('edit_password').value = ''; 
+            document.getElementById('edit_password').type = 'password';
+            document.getElementById('modalEditProfil').classList.remove('hidden');
+        }
+
+        async function simpanEditProfil(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSimpanProfil');
+            btn.disabled = true;
+            btn.innerText = 'Menyimpan...';
+
+            const payloadData = {
+                action: 'update_profile',
+                user_id: currentUser.user_id,
+                email_baru: document.getElementById('edit_email').value,
+                password_baru: document.getElementById('edit_password').value
+            };
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify(payloadData),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    alert("Profil berhasil diperbarui!");
+                    localStorage.setItem('lms_user', JSON.stringify(result.data));
+                    currentUser = result.data;
+
+                    document.getElementById('namaSiswa').innerText = currentUser.nama_lengkap;
+                    document.getElementById('profilNama').innerText = currentUser.nama_lengkap;
+                    document.getElementById('profilEmail').innerText = currentUser.email;
+
+                    document.getElementById('modalEditProfil').classList.add('hidden');
+                } else {
+                    alert(`Gagal: ${result.message}`);
+                }
+            } catch (error) {
+                alert("Terjadi kesalahan jaringan.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Simpan';
+            }
+        }
+
+        async function muatKelasSiswa() {
+            const container = document.getElementById('daftarKelasContainer');
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_student_classes', student_id: currentUser.user_id }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.data && result.data.length > 0) {
+                    container.innerHTML = '';
+                    result.data.forEach(kelas => {
+                        let badgeNotif = kelas.has_new_task 
+                            ? `<span class="bg-rose-500/20 border border-rose-500/50 text-rose-400 text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-400"></span> Tugas Baru</span>` 
+                            : `<span class="bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 text-xs px-2.5 py-1 rounded-full">Semua Selesai</span>`;
+
+                        container.innerHTML += `
+                            <div class="glass-panel border border-sky-500/30 rounded-xl p-5 hover:border-sky-400 transition-all shadow-lg flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-start gap-2 mb-2">
+                                        <h3 class="text-lg font-bold text-white">${kelas.nama_kelas}</h3>
+                                        ${badgeNotif}
+                                    </div>
+                                    <p class="text-sm text-slate-400 mb-4 flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                        Pengajar: ${kelas.nama_guru}
+                                    </p>
+                                </div>
+                                <a href="detail-kelas-siswa.html?id=${kelas.class_id}&nama=${encodeURIComponent(kelas.nama_kelas)}" class="w-full text-center block bg-sky-600 hover:bg-sky-500 text-sm text-white py-2 rounded-lg transition-colors shadow-[0_0_10px_rgba(14,165,233,0.3)]">
+                                    Lihat Tugas
+                                </a>
+                            </div>
+                        `;
+                    });
+                } else {
+                    container.innerHTML = `
+                        <div class="border border-slate-700 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 min-h-[150px] col-span-1 sm:col-span-2">
+                            <span>Anda belum bergabung dengan kelas manapun. Masukkan kode kelas di samping.</span>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="text-red-400 col-span-2 text-center">Gagal memuat daftar kelas.</div>`;
+            }
+        }
+
+        async function gabungKelas(event) {
+            event.preventDefault();
+            const btnSubmit = document.getElementById('btnSubmitGabung');
+            btnSubmit.disabled = true; btnSubmit.innerHTML = 'Memproses...';
+
+            const payloadData = {
+                action: 'join_class',
+                kode_kelas: document.getElementById('kode_kelas').value,
+                student_id: currentUser.user_id
+            };
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST', body: JSON.stringify(payloadData),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    alert(result.message);
+                    document.getElementById('formGabungKelas').reset();
+                    muatKelasSiswa(); 
+                } else {
+                    alert(`Gagal: ${result.message}`);
+                }
+            } catch (error) {
+                alert("Terjadi kesalahan jaringan.");
+            } finally {
+                btnSubmit.disabled = false; btnSubmit.innerHTML = 'Gabung';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Guru - LMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 70%);
+            color: #f8fafc;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        .neon-input:focus {
+            outline: none; border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        .neon-input-amber:focus {
+            outline: none; border-color: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Navbar -->
+    <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center">
+        <div class="text-xl font-bold text-sky-400">LMS Workspace</div>
+        <div class="flex items-center gap-4">
+            <div class="text-sm text-slate-300">Halo, <span id="namaGuru" class="font-semibold text-white">Guru</span></div>
+            <button onclick="logout()" class="bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/50 px-4 py-1.5 rounded-lg text-sm transition-all">Keluar</button>
+        </div>
+    </nav>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Panel Kiri: Form Buat Kelas -->
+        <div class="glass-panel rounded-2xl p-6 md:col-span-1 h-fit">
+            <h2 class="text-xl font-bold mb-4 text-white flex items-center gap-2">Buat Kelas Baru</h2>
+            <form id="formBuatKelas" onsubmit="buatKelas(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Nama Kelas / Mata Pelajaran</label>
+                    <input type="text" id="nama_kelas" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all" placeholder="Contoh: PJOK Kelas X-A">
+                </div>
+                <button type="submit" id="btnSubmit" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-[0_0_15px_rgba(56,189,248,0.4)]">Buat Kelas</button>
+            </form>
+            <div id="hasilBuatKelas" class="mt-6 hidden bg-slate-800/80 border border-emerald-500/50 rounded-lg p-4 text-center">
+                <p class="text-sm text-emerald-400 mb-1">Kelas berhasil dibuat!</p>
+                <div class="text-2xl font-mono font-bold text-white tracking-widest bg-slate-900 py-2 rounded border border-slate-700" id="kodeKelasBaru"></div>
+            </div>
+        </div>
+
+        <!-- Panel Kanan: Daftar Kelas -->
+        <div class="glass-panel rounded-2xl p-6 md:col-span-2">
+            <h2 class="text-xl font-bold mb-4 text-white">Kelas Anda</h2>
+            
+            <!-- Area ini akan diisi secara dinamis oleh JavaScript -->
+            <div id="daftarKelasContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="text-slate-400 col-span-2 text-center py-8">Memuat kelas...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Kelas -->
+    <div id="modalEditKelas" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel rounded-2xl p-6 w-full max-w-md border border-amber-500/30">
+            <h2 class="text-xl font-bold mb-4 text-white">Edit Nama Kelas</h2>
+            <form onsubmit="simpanEditKelas(event)">
+                <input type="hidden" id="edit_class_id">
+                <div class="mb-6">
+                    <label class="block text-sm text-slate-300 mb-1">Nama Kelas / Mata Pelajaran Baru</label>
+                    <input type="text" id="edit_nama_kelas" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber">
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="document.getElementById('modalEditKelas').classList.add('hidden')" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg">Batal</button>
+                    <button type="submit" id="btnSimpanEditKelas" class="w-1/2 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-lg font-semibold">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
+        let currentUser = null;
+
+        window.onload = function() {
+            const sessionData = localStorage.getItem('lms_user');
+            if (!sessionData) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            currentUser = JSON.parse(sessionData);
+            if (currentUser.role !== 'Guru') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('namaGuru').innerText = currentUser.nama_lengkap;
+            muatDaftarKelas();
+        };
+
+        function logout() {
+            localStorage.removeItem('lms_user');
+            window.location.href = 'login.html';
+        }
+
+        async function muatDaftarKelas() {
+            const container = document.getElementById('daftarKelasContainer');
+            
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'get_teacher_classes',
+                        teacher_id: currentUser.user_id
+                    }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.data.length > 0) {
+                    container.innerHTML = ''; 
+                    
+                    result.data.forEach(kelas => {
+                        const safeNamaKelas = kelas.nama_kelas.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        container.innerHTML += `
+                            <div class="glass-panel border border-sky-500/30 rounded-xl p-5 hover:border-sky-400 transition-all shadow-lg flex flex-col justify-between">
+                                <div>
+                                    <h3 class="text-lg font-bold text-white mb-2">${kelas.nama_kelas}</h3>
+                                    <p class="text-xs text-slate-400 mb-4">Kode Kelas: 
+                                        <span class="font-mono text-sky-300 bg-sky-900/40 px-2 py-1 rounded select-all">${kelas.kode_kelas}</span>
+                                    </p>
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <a href="detail-kelas-guru.html?id=${kelas.class_id}&nama=${encodeURIComponent(kelas.nama_kelas)}" class="w-full text-center bg-slate-700 hover:bg-slate-600 text-sm text-white py-2 rounded-lg transition-colors">
+                                        Masuk ke Kelas
+                                    </a>
+                                    <div class="flex gap-2">
+                                        <button onclick="bukaModalEditKelas('${kelas.class_id}', '${safeNamaKelas}')" class="flex-1 bg-amber-600/80 hover:bg-amber-500 text-sm text-white py-1.5 rounded-lg transition-colors border border-amber-500/50">
+                                            Edit
+                                        </button>
+                                        <button onclick="hapusKelas('${kelas.class_id}', '${safeNamaKelas}')" class="flex-1 bg-rose-600/80 hover:bg-rose-500 text-sm text-white py-1.5 rounded-lg transition-colors border border-rose-500/50">
+                                            Hapus
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    container.innerHTML = `
+                        <div class="border border-slate-700 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 min-h-[150px] col-span-1 sm:col-span-2">
+                            <span>Belum ada kelas yang dibuat</span>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="text-red-400 col-span-2 text-center">Gagal memuat daftar kelas.</div>`;
+            }
+        }
+
+        // --- FUNGSI MODAL EDIT KELAS ---
+        function bukaModalEditKelas(classId, namaKelas) {
+            document.getElementById('edit_class_id').value = classId;
+            document.getElementById('edit_nama_kelas').value = namaKelas;
+            document.getElementById('modalEditKelas').classList.remove('hidden');
+        }
+
+        async function simpanEditKelas(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSimpanEditKelas');
+            btn.disabled = true;
+            btn.innerText = 'Menyimpan...';
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'edit_class',
+                        class_id: document.getElementById('edit_class_id').value,
+                        nama_kelas: document.getElementById('edit_nama_kelas').value,
+                        teacher_id: currentUser.user_id
+                    }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    document.getElementById('modalEditKelas').classList.add('hidden');
+                    muatDaftarKelas(); // Refresh daftar kelas
+                } else {
+                    alert(`Gagal memperbarui kelas: ${result.message}`);
+                }
+            } catch (error) {
+                alert("Terjadi kesalahan jaringan.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Simpan';
+            }
+        }
+
+        async function hapusKelas(classId, namaKelas) {
+            if (!confirm(`Apakah Anda yakin ingin menghapus kelas "${namaKelas}"? Semua data materi dan tugas di dalam kelas ini akan ikut terhapus.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'delete_class',
+                        class_id: classId,
+                        teacher_id: currentUser.user_id
+                    }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert("Kelas berhasil dihapus.");
+                    muatDaftarKelas(); 
+                } else {
+                    alert(`Gagal menghapus kelas: ${result.message}`);
+                }
+            } catch (error) {
+                alert("Terjadi kesalahan jaringan saat menghapus kelas.");
+            }
+        }
+
+        async function buatKelas(event) {
+            event.preventDefault();
+            const btnSubmit = document.getElementById('btnSubmit');
+            const hasilDiv = document.getElementById('hasilBuatKelas');
+            
+            btnSubmit.disabled = true; btnSubmit.innerHTML = 'Memproses...';
+            hasilDiv.classList.add('hidden');
+
+            const payloadData = {
+                action: 'create_class',
+                nama_kelas: document.getElementById('nama_kelas').value,
+                teacher_id: currentUser.user_id
+            };
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST', body: JSON.stringify(payloadData),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    hasilDiv.classList.remove('hidden');
+                    document.getElementById('kodeKelasBaru').innerText = result.data.kode_kelas;
+                    document.getElementById('formBuatKelas').reset();
+                    muatDaftarKelas(); 
+                } else {
+                    alert(`Gagal membuat kelas: ${result.message}`);
+                }
+            } catch (error) {
+                alert("Terjadi kesalahan jaringan.");
+            } finally {
+                btnSubmit.disabled = false; btnSubmit.innerHTML = 'Buat Kelas';
+            }
+        }
+    </script>
+</body>
+</html>

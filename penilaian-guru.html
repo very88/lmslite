@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penilaian Tugas - Guru</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 70%); color: #f8fafc; min-height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
+        .neon-input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center max-w-4xl mx-auto">
+        <div class="flex items-center gap-4">
+            <button onclick="window.history.back()" class="text-slate-400 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            </button>
+            <div>
+                <div class="text-xs text-sky-400 font-bold uppercase tracking-wider">Penilaian Tugas</div>
+                <div class="text-lg font-semibold text-white" id="judulTugasDisplay">Memuat Judul...</div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="glass-panel rounded-2xl p-6 max-w-4xl mx-auto">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-700 text-slate-400 text-sm">
+                        <th class="py-3 px-4 font-medium">Nama Siswa</th>
+                        <th class="py-3 px-4 font-medium text-center">Tautan Jawaban / File</th>
+                        <th class="py-3 px-4 font-medium text-center w-32">Nilai (0-100)</th>
+                        <th class="py-3 px-4 font-medium text-center w-24">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelPengumpulan">
+                    <tr><td colspan="4" class="text-center py-8 text-slate-500">Memuat data pengumpulan...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec'; // MASUKKAN URL GAS ANDA
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const taskId = urlParams.get('id_tugas');
+        const taskTitle = urlParams.get('judul_tugas');
+
+        window.onload = function() {
+            if (!taskId) { alert("ID Tugas tidak ditemukan!"); window.history.back(); return; }
+            document.getElementById('judulTugasDisplay').innerText = taskTitle || "Detail Tugas";
+            muatDaftarPengumpulan();
+        };
+
+        async function muatDaftarPengumpulan() {
+            const tbody = document.getElementById('tabelPengumpulan');
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_submissions', assignment_id: taskId }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.data.length > 0) {
+                    tbody.innerHTML = '';
+                    result.data.forEach(sub => {
+                        tbody.innerHTML += `
+                            <tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+                                <td class="py-4 px-4 font-medium text-white">${sub.student_name}</td>
+                                <td class="py-4 px-4 text-center">
+                                    <a href="${sub.file_url}" target="_blank" class="text-sky-400 hover:text-sky-300 hover:underline flex items-center justify-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                        Buka File
+                                    </a>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <input type="number" id="nilai_${sub.submission_id}" value="${sub.nilai}" min="0" max="100" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white neon-input">
+                                </td>
+                                <td class="py-4 px-4 text-center">
+                                    <button onclick="simpanNilai('${sub.submission_id}')" id="btn_${sub.submission_id}" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm px-3 py-1.5 rounded transition-colors">Simpan</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-500 border-b border-slate-700/50">Belum ada siswa yang mengumpulkan tugas ini.</td></tr>`;
+                }
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-400">Gagal memuat data.</td></tr>`;
+            }
+        }
+
+        async function simpanNilai(submissionId) {
+            const inputNilai = document.getElementById(`nilai_${submissionId}`).value;
+            const btn = document.getElementById(`btn_${submissionId}`);
+            
+            if (inputNilai === "") { alert("Masukkan angka nilai terlebih dahulu."); return; }
+
+            btn.disabled = true; btn.innerText = "...";
+            
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'update_grade', submission_id: submissionId, nilai: inputNilai }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    btn.classList.replace('bg-emerald-600', 'bg-sky-600');
+                    btn.innerText = "Tersimpan";
+                    setTimeout(() => { btn.classList.replace('bg-sky-600', 'bg-emerald-600'); btn.innerText = "Simpan"; btn.disabled = false; }, 2000);
+                } else {
+                    alert(`Gagal menyimpan: ${result.message}`); btn.disabled = false; btn.innerText = "Simpan";
+                }
+            } catch (error) {
+                alert("Kesalahan jaringan."); btn.disabled = false; btn.innerText = "Simpan";
+            }
+        }
+    </script>
+</body>
+</html>
