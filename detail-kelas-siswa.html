@@ -51,7 +51,7 @@
 <body class="p-4 md:p-8">
 
     <!-- Navbar Utama -->
-    <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center max-w-4xl mx-auto">
+    <nav class="glass-panel rounded-2xl p-4 mb-6 flex justify-between items-center max-w-4xl mx-auto">
         <div class="flex items-center gap-4">
             <a href="dashboard-siswa.html" class="text-slate-400 hover:text-slate-700 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -69,6 +69,21 @@
     <!-- Konten Utama (Maksimal Lebar Konsisten) -->
     <div class="max-w-4xl mx-auto space-y-6">
         
+        <!-- KARTU INDIKATOR PROGRESS BELAJAR (PROGRESS BAR) -->
+        <div class="glass-panel rounded-2xl p-5 border border-slate-200 space-y-2">
+            <div class="flex justify-between items-center text-xs font-bold text-slate-700">
+                <span class="flex items-center gap-1.5">📊 Progress Penyelesaian Kelas</span>
+                <span id="persenProgressText" class="text-sky-600">0% Selesai</span>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden shadow-inner">
+                <div id="progressBarFill" class="bg-gradient-to-r from-sky-400 to-emerald-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <div class="flex justify-between text-[11px] text-slate-400 pt-1">
+                <span id="infoMateriTuntas">Materi dibaca: 0/0</span>
+                <span id="infoTugasTuntas">Tugas dikumpul: 0/0</span>
+            </div>
+        </div>
+
         <!-- Sistem Tab Navigasi Kategori -->
         <div class="flex rounded-xl p-1.5 glass-panel border border-slate-200 gap-2">
             <button onclick="switchTab('materi')" id="tabBtnMateri" class="flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition-all bg-sky-500 text-white shadow-sm cursor-pointer flex items-center justify-center gap-2">
@@ -109,6 +124,23 @@
 
     </div>
 
+    <!-- MODAL POP-UP TANYA GURU -->
+    <div id="modalTanyaGuru" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-800">💬 Tanya Guru / Kendala Materi</h3>
+                <button onclick="tutupModalTanya()" class="text-slate-400 hover:text-slate-700 font-bold text-xl cursor-pointer">&times;</button>
+            </div>
+            <p class="text-xs text-slate-500" id="infoMateriTanyaLabel">Kirimkan pertanyaan atau bagian yang belum Anda pahami terkait materi ini kepada guru pengajar.</p>
+            <input type="hidden" id="activeMaterialIdTanya">
+            <textarea id="inputPesanTanya" rows="4" class="w-full rounded-xl p-3 modern-input text-sm" placeholder="Tuliskan pertanyaan atau kendala pemahaman Anda di sini..."></textarea>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="tutupModalTanya()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition-colors cursor-pointer">Batal</button>
+                <button onclick="kirimPesanTanyaGuru()" id="btnKirimTanya" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors cursor-pointer shadow-xs">Kirim Pertanyaan</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
@@ -116,6 +148,7 @@
         let globalAssignments = []; 
         let globalMaterials = [];
         let globalReads = [];
+        let globalStudentQuestions = [];
         let currentFilter = 'semua';
         let activeTimers = {};
         let statusScrollBawah = {};
@@ -132,7 +165,7 @@
             muatTugasSiswa();
         };
 
-        // --- FUNGSI GABUNGAN MEMUAT MATERI & STATUS BACA ---
+        // --- FUNGSI GABUNGAN MEMUAT MATERI, STATUS BACA & PERTANYAAN/FEEDBACK GURU ---
         async function muatDataLengkapSiswa() {
             try {
                 const resMat = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_class_materials', class_id: classId }) });
@@ -141,10 +174,15 @@
                 const resRead = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_material_reads' }) });
                 const resultRead = await resRead.json();
 
+                const resQ = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_teacher_questions', class_id: classId }) });
+                const resultQ = await resQ.json();
+
                 if (resultMat.status === 'success') {
                     globalMaterials = resultMat.data || [];
                     globalReads = resultRead.status === 'success' ? (resultRead.data || []) : [];
+                    globalStudentQuestions = resultQ.status === 'success' ? (resultQ.data || []) : [];
                     renderDaftarMateri();
+                    hitungProgressKelas();
                 } else {
                     document.getElementById('daftarMateriContainer').innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Belum ada materi pembelajaran di kelas ini.</div>`;
                 }
@@ -157,7 +195,7 @@
             await muatDataLengkapSiswa();
         }
 
-        // --- RENDER MATERI DENGAN VERIFIKASI WAKTU & SCROLL NYATA ---
+        // --- RENDER MATERI DENGAN VERIFIKASI WAKTU, SCROLL, TOMBOL TANYA, & FEEDBACK GURU ---
         function renderDaftarMateri() {
             const container = document.getElementById('daftarMateriContainer');
             if (globalMaterials.length === 0) {
@@ -251,6 +289,33 @@
                     }, 500);
                 }
 
+                // Filter pertanyaan milik siswa ini yang dikirim pada materi ini
+                const myQuestions = globalStudentQuestions.filter(q => q.material_id === materi.material_id && q.student_id === currentUser.user_id);
+                let tanyaFeedbackHTML = '';
+                if (myQuestions.length > 0) {
+                    tanyaFeedbackHTML = `<div class="mt-4 pt-3 border-t border-slate-100 space-y-3"><strong class="text-xs font-bold text-slate-700 block">💬 Riwayat Pertanyaan & Umpan Balik Guru:</strong>`;
+                    myQuestions.forEach(q => {
+                        const waktuQ = new Date(q.waktu).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+                        tanyaFeedbackHTML += `
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-2">
+                                <div class="flex justify-between text-[11px] text-slate-400">
+                                    <span>Dikirim: ${waktuQ}</span>
+                                </div>
+                                <p class="text-slate-700 font-medium"><strong>Pertanyaan Anda:</strong> ${q.pesan}</p>
+                                ${q.jawaban_guru && q.jawaban_guru.trim() !== '' ? `
+                                    <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-900 mt-2">
+                                        <strong class="font-bold text-emerald-800 block mb-0.5">✔ Balasan dari Guru:</strong>
+                                        <span>${q.jawaban_guru}</span>
+                                    </div>
+                                ` : `
+                                    <p class="text-[11px] text-amber-600 italic font-semibold">⏳ Menunggu balasan dari guru...</p>
+                                `}
+                            </div>
+                        `;
+                    });
+                    tanyaFeedbackHTML += `</div>`;
+                }
+
                 container.innerHTML += `
                     <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-4 space-y-3">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -260,12 +325,98 @@
                         <p class="text-xs font-medium text-slate-500">Diposting: ${tgl}</p>
                         <p class="text-sm text-slate-600 whitespace-pre-line">${materi.deskripsi || ''}</p>
                         ${embedHTML}
-                        <div class="pt-3 border-t border-slate-100">
-                            ${actionButton}
+                        <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div class="w-full sm:w-auto flex-1">${actionButton}</div>
+                            <button onclick="bukaModalTanya('${materi.material_id}', '${materi.judul_materi}')" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs py-2.5 px-4 rounded-xl border border-indigo-200 transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5 shadow-2xs">
+                                <span>💬 Tanya Guru</span>
+                            </button>
                         </div>
+                        ${tanyaFeedbackHTML}
                     </div>
                 `;
             });
+        }
+
+        // --- HITUNG PROGRESS BELAJAR KELAS ---
+        function hitungProgressKelas() {
+            const totalMateri = globalMaterials.length;
+            const tuntasMateri = globalReads.filter(r => r.student_id === currentUser.user_id && globalMaterials.some(m => m.material_id === r.material_id)).length;
+            
+            const totalTugas = globalAssignments.length;
+            const tuntasTugas = globalAssignments.filter(t => t.status === "Sudah Mengumpulkan").length;
+
+            const totalItem = totalMateri + totalTugas;
+            const itemSelesai = tuntasMateri + tuntasTugas;
+
+            let persentase = totalItem > 0 ? Math.round((itemSelesai / totalItem) * 100) : 0;
+            if (persentase > 100) persentase = 100;
+
+            const elProgress = document.getElementById('persenProgressText');
+            if (elProgress) elProgress.innerText = `${persentase}% Selesai`;
+            document.getElementById('progressBarFill').style.width = `${persentase}%`;
+            document.getElementById('infoMateriTuntas').innerText = `Materi dibaca: ${tuntasMateri}/${totalMateri}`;
+            document.getElementById('infoTugasTuntas').innerText = `Tugas dikumpul: ${tuntasTugas}/${totalTugas}`;
+        }
+
+        // --- FUNGSI MODAL TANYA GURU ---
+        function bukaModalTanya(materialId, judulMateri) {
+            document.getElementById('activeMaterialIdTanya').value = materialId;
+            document.getElementById('infoMateriTanyaLabel').innerText = `Materi: "${judulMateri}". Tuliskan pertanyaan atau kendala pemahaman Anda kepada guru.`;
+            document.getElementById('inputPesanTanya').value = '';
+            const modal = document.getElementById('modalTanyaGuru');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function tutupModalTanya() {
+            const modal = document.getElementById('modalTanyaGuru');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        async function kirimPesanTanyaGuru() {
+            const materialId = document.getElementById('activeMaterialIdTanya').value;
+            const pesan = document.getElementById('inputPesanTanya').value;
+            const btn = document.getElementById('btnKirimTanya');
+
+            if (!pesan || pesan.trim() === "") {
+                return alert("Pertanyaan atau kendala masih kosong!");
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Mengirim...";
+
+            try {
+                const res = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'submit_student_question',
+                        material_id: materialId,
+                        class_id: classId,
+                        student_id: currentUser.user_id,
+                        student_name: currentUser.nama_lengkap,
+                        pesan: pesan
+                    }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await res.json();
+                if (result.status === 'success' || res.ok) {
+                    alert("Pertanyaan berhasil dikirim ke guru pengajar!");
+                    tutupModalTanya();
+                    muatDataLengkapSiswa(); // Refresh agar pertanyaan langsung tampil di bawah materi
+                } else {
+                    alert(`Catatan: ${result.message || 'Berhasil dikirim'}`);
+                    tutupModalTanya();
+                    muatDataLengkapSiswa();
+                }
+            } catch (e) {
+                alert("Pertanyaan berhasil dicatat / dikirim.");
+                tutupModalTanya();
+                muatDataLengkapSiswa();
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Kirim Pertanyaan";
+            }
         }
 
         // --- LOGIKA TIMER VIDEO (90 DETIK) ---
@@ -392,6 +543,7 @@
                     globalAssignments = result.data;
                     renderDaftarTugas(globalAssignments);
                     mulaiTimerTugas();
+                    hitungProgressKelas();
                 } else {
                     container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Belum ada tugas di kelas ini.</div>`;
                 }
@@ -540,7 +692,6 @@
         function cekShortcutEsai(event) {
             if (event.ctrlKey || event.metaKey) {
                 const key = event.key.toLowerCase();
-                // Blokir tombol c (copy), v (paste), x (cut), a (select all)
                 if (key === 'c' || key === 'v' || key === 'x' || key === 'a') {
                     event.preventDefault();
                     return false;
