@@ -7,21 +7,36 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            background-color: #0f172a;
-            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 70%);
-            color: #f8fafc;
+            background-color: #f8fafc;
+            background-image: radial-gradient(circle at 50% 0%, #ffffff 0%, #f1f5f9 100%);
+            color: #334155;
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+        /* Glass panel versi Light Mode */
         .glass-panel {
-            background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8); 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
         }
-        .neon-input:focus {
-            outline: none; border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        /* Input Styling modern */
+        .modern-input {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+            transition: all 0.2s ease-in-out;
         }
-        .neon-input-amber:focus {
-            outline: none; border-color: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        .modern-input:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        }
+        .modern-input-amber:focus {
+            outline: none;
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
         }
     </style>
 </head>
@@ -29,10 +44,10 @@
 
     <!-- Navbar -->
     <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center">
-        <div class="text-xl font-bold text-sky-400">LMS Workspace</div>
+        <div class="text-xl font-bold text-sky-600">LMS Workspace</div>
         <div class="flex items-center gap-4">
-            <div class="text-sm text-slate-300">Halo, <span id="namaGuru" class="font-semibold text-white">Guru</span></div>
-            <button onclick="logout()" class="bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/50 px-4 py-1.5 rounded-lg text-sm transition-all">Keluar</button>
+            <div class="text-sm font-medium text-slate-500">Halo, <span id="namaGuru" class="font-bold text-slate-800">Guru</span></div>
+            <button onclick="logout()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all">Keluar</button>
         </div>
     </nav>
 
@@ -41,44 +56,45 @@
         
         <!-- Panel Kiri: Form Buat Kelas -->
         <div class="glass-panel rounded-2xl p-6 md:col-span-1 h-fit">
-            <h2 class="text-xl font-bold mb-4 text-white flex items-center gap-2">Buat Kelas Baru</h2>
+            <h2 class="text-xl font-bold mb-4 text-slate-800 flex items-center gap-2 border-b border-slate-200 pb-2">Buat Kelas Baru</h2>
             <form id="formBuatKelas" onsubmit="buatKelas(event)">
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Nama Kelas / Mata Pelajaran</label>
-                    <input type="text" id="nama_kelas" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input transition-all" placeholder="Contoh: PJOK Kelas X-A">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Nama Kelas / Mata Pelajaran</label>
+                    <input type="text" id="nama_kelas" required class="w-full rounded-lg px-4 py-2 modern-input" placeholder="Contoh: PJOK Kelas X-A">
                 </div>
-                <button type="submit" id="btnSubmit" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-[0_0_15px_rgba(56,189,248,0.4)]">Buat Kelas</button>
+                <button type="submit" id="btnSubmit" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-md">Buat Kelas</button>
             </form>
-            <div id="hasilBuatKelas" class="mt-6 hidden bg-slate-800/80 border border-emerald-500/50 rounded-lg p-4 text-center">
-                <p class="text-sm text-emerald-400 mb-1">Kelas berhasil dibuat!</p>
-                <div class="text-2xl font-mono font-bold text-white tracking-widest bg-slate-900 py-2 rounded border border-slate-700" id="kodeKelasBaru"></div>
+
+            <div id="hasilBuatKelas" class="mt-6 hidden bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center">
+                <p class="text-sm font-semibold text-emerald-700 mb-1">Kelas berhasil dibuat!</p>
+                <div class="text-2xl font-mono font-bold text-slate-800 tracking-widest bg-white py-2 rounded border border-slate-200" id="kodeKelasBaru"></div>
             </div>
         </div>
 
         <!-- Panel Kanan: Daftar Kelas -->
         <div class="glass-panel rounded-2xl p-6 md:col-span-2">
-            <h2 class="text-xl font-bold mb-4 text-white">Kelas Anda</h2>
+            <h2 class="text-xl font-bold mb-4 text-slate-800 border-b border-slate-200 pb-2">Kelas Anda</h2>
             
             <!-- Area ini akan diisi secara dinamis oleh JavaScript -->
-            <div id="daftarKelasContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="text-slate-400 col-span-2 text-center py-8">Memuat kelas...</div>
+            <div id="daftarKelasContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div class="text-slate-500 col-span-2 text-center py-8 font-medium">Memuat kelas...</div>
             </div>
         </div>
     </div>
 
     <!-- Modal Edit Kelas -->
-    <div id="modalEditKelas" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="glass-panel rounded-2xl p-6 w-full max-w-md border border-amber-500/30">
-            <h2 class="text-xl font-bold mb-4 text-white">Edit Nama Kelas</h2>
+    <div id="modalEditKelas" class="fixed inset-0 z-50 hidden bg-slate-800/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md border border-slate-200 shadow-xl">
+            <h2 class="text-xl font-bold mb-4 text-slate-800 border-b border-slate-100 pb-2">Edit Nama Kelas</h2>
             <form onsubmit="simpanEditKelas(event)">
                 <input type="hidden" id="edit_class_id">
                 <div class="mb-6">
-                    <label class="block text-sm text-slate-300 mb-1">Nama Kelas / Mata Pelajaran Baru</label>
-                    <input type="text" id="edit_nama_kelas" required class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-white neon-input-amber">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Nama Kelas / Mata Pelajaran Baru</label>
+                    <input type="text" id="edit_nama_kelas" required class="w-full rounded-lg px-4 py-2 modern-input-amber">
                 </div>
                 <div class="flex gap-3">
-                    <button type="button" onclick="document.getElementById('modalEditKelas').classList.add('hidden')" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg">Batal</button>
-                    <button type="submit" id="btnSimpanEditKelas" class="w-1/2 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-lg font-semibold">Simpan</button>
+                    <button type="button" onclick="document.getElementById('modalEditKelas').classList.add('hidden')" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 rounded-lg transition-colors">Batal</button>
+                    <button type="submit" id="btnSimpanEditKelas" class="w-1/2 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 rounded-lg transition-colors">Simpan</button>
                 </div>
             </form>
         </div>
@@ -131,22 +147,22 @@
                     result.data.forEach(kelas => {
                         const safeNamaKelas = kelas.nama_kelas.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         container.innerHTML += `
-                            <div class="glass-panel border border-sky-500/30 rounded-xl p-5 hover:border-sky-400 transition-all shadow-lg flex flex-col justify-between">
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 hover:border-sky-300 hover:shadow-md transition-all shadow-sm flex flex-col justify-between">
                                 <div>
-                                    <h3 class="text-lg font-bold text-white mb-2">${kelas.nama_kelas}</h3>
-                                    <p class="text-xs text-slate-400 mb-4">Kode Kelas: 
-                                        <span class="font-mono text-sky-300 bg-sky-900/40 px-2 py-1 rounded select-all">${kelas.kode_kelas}</span>
+                                    <h3 class="text-lg font-bold text-slate-800 mb-2">${kelas.nama_kelas}</h3>
+                                    <p class="text-xs font-medium text-slate-500 mb-4">Kode Kelas: 
+                                        <span class="font-mono font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2 py-1 rounded select-all">${kelas.kode_kelas}</span>
                                     </p>
                                 </div>
                                 <div class="flex flex-col gap-2">
-                                    <a href="detail-kelas-guru.html?id=${kelas.class_id}&nama=${encodeURIComponent(kelas.nama_kelas)}" class="w-full text-center bg-slate-700 hover:bg-slate-600 text-sm text-white py-2 rounded-lg transition-colors">
+                                    <a href="detail-kelas-guru.html?id=${kelas.class_id}&nama=${encodeURIComponent(kelas.nama_kelas)}" class="w-full text-center bg-sky-500 hover:bg-sky-600 text-sm font-semibold text-white py-2 rounded-lg transition-colors shadow-sm">
                                         Masuk ke Kelas
                                     </a>
                                     <div class="flex gap-2">
-                                        <button onclick="bukaModalEditKelas('${kelas.class_id}', '${safeNamaKelas}')" class="flex-1 bg-amber-600/80 hover:bg-amber-500 text-sm text-white py-1.5 rounded-lg transition-colors border border-amber-500/50">
+                                        <button onclick="bukaModalEditKelas('${kelas.class_id}', '${safeNamaKelas}')" class="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-600 text-sm font-semibold py-1.5 rounded-lg transition-colors border border-amber-200">
                                             Edit
                                         </button>
-                                        <button onclick="hapusKelas('${kelas.class_id}', '${safeNamaKelas}')" class="flex-1 bg-rose-600/80 hover:bg-rose-500 text-sm text-white py-1.5 rounded-lg transition-colors border border-rose-500/50">
+                                        <button onclick="hapusKelas('${kelas.class_id}', '${safeNamaKelas}')" class="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold py-1.5 rounded-lg transition-colors border border-rose-200">
                                             Hapus
                                         </button>
                                     </div>
@@ -156,13 +172,13 @@
                     });
                 } else {
                     container.innerHTML = `
-                        <div class="border border-slate-700 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 min-h-[150px] col-span-1 sm:col-span-2">
-                            <span>Belum ada kelas yang dibuat</span>
+                        <div class="bg-slate-50 border border-slate-300 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 min-h-[150px] col-span-1 sm:col-span-2">
+                            <span class="font-medium">Belum ada kelas yang dibuat</span>
                         </div>
                     `;
                 }
             } catch (error) {
-                container.innerHTML = `<div class="text-red-400 col-span-2 text-center">Gagal memuat daftar kelas.</div>`;
+                container.innerHTML = `<div class="text-rose-500 col-span-2 text-center font-medium">Gagal memuat daftar kelas.</div>`;
             }
         }
 
