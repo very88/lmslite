@@ -38,6 +38,14 @@
             border-color: #38bdf8;
             box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
         }
+
+        /* Nonaktifkan seleksi teks khusus kotak esai aman */
+        .secure-essay {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -480,11 +488,18 @@
                                 <option value="file">📁 Upload File (PDF / Gambar / Doc)</option>
                             </select>
                             
-                            <!-- Lembar Esai Langsung -->
+                            <!-- Lembar Esai Langsung (Anti Copy-Paste & Anti Paste) -->
                             <div id="div_esai_${tugas.assignment_id}" class="mb-4">
-                                <label class="block text-xs font-bold text-slate-600 mb-1">Lembar Jawaban Esai:</label>
-                                <textarea id="text_esai_${tugas.assignment_id}" rows="6" class="w-full rounded-xl p-3 modern-input text-sm" placeholder="Ketik jawaban esai Anda di sini secara lengkap..."></textarea>
-                                <div class="text-[11px] text-slate-400 mt-1">💡 Anda dapat mengetik langsung dan meninjau jawaban sebelum dikirim.</div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Lembar Jawaban Esai (Pengetikan Mandiri):</label>
+                                <textarea id="text_esai_${tugas.assignment_id}" rows="6" 
+                                    oncopy="return false" 
+                                    onpaste="return false" 
+                                    oncut="return false" 
+                                    oncontextmenu="return false" 
+                                    onkeydown="cekShortcutEsai(event)"
+                                    class="w-full rounded-xl p-3 modern-input text-sm secure-essay" 
+                                    placeholder="Ketik jawaban esai Anda langsung di sini... (Fitur Salin & Tempel dinonaktifkan)"></textarea>
+                                <div class="text-[11px] text-amber-600 font-medium mt-1">🔒 Kebijakan Integritas: Anda wajib mengetik jawaban secara langsung (Copy & Paste dinonaktifkan).</div>
                             </div>
 
                             <!-- Input Tautan -->
@@ -519,6 +534,18 @@
                         ${formHTML}
                     </div>`;
             });
+        }
+
+        // --- PENGAMAN TAMBAHAN: BLOKIR SHORTCUT KEYBOARD (CTRL+C, CTRL+V, CTRL+X, CTRL+A) ---
+        function cekShortcutEsai(event) {
+            if (event.ctrlKey || event.metaKey) {
+                const key = event.key.toLowerCase();
+                // Blokir tombol c (copy), v (paste), x (cut), a (select all)
+                if (key === 'c' || key === 'v' || key === 'x' || key === 'a') {
+                    event.preventDefault();
+                    return false;
+                }
+            }
         }
 
         // --- LIVE COUNTDOWN TIMER ---
