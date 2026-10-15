@@ -36,7 +36,8 @@
 </head>
 <body class="p-4 md:p-8">
 
-    <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center max-w-5xl mx-auto">
+    <!-- Navbar Utama -->
+    <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center max-w-4xl mx-auto">
         <div class="flex items-center gap-4">
             <a href="dashboard-siswa.html" class="text-slate-400 hover:text-slate-700 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -44,34 +45,63 @@
                 </svg>
             </a>
             <div>
-                <div class="text-xs text-sky-600 font-bold uppercase">Ruang Kelas</div>
-                <div class="text-lg font-semibold text-slate-800" id="namaKelasTitle">Memuat...</div>
+                <div class="text-xs text-sky-600 font-bold uppercase tracking-wider">Ruang Kelas Pembelajaran</div>
+                <div class="text-lg font-bold text-slate-800" id="namaKelasTitle">Memuat...</div>
             </div>
         </div>
-        <div class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">Mode Siswa</div>
+        <div class="text-sm font-semibold text-sky-700 bg-sky-50 px-3 py-1 rounded-full border border-sky-200 shadow-xs">Mode Siswa</div>
     </nav>
 
-    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-        <!-- Bagian Materi -->
-        <div>
-            <h2 class="text-xl font-bold mb-4 text-slate-800 border-b border-slate-200 pb-2">📖 Materi Pembelajaran</h2>
+    <!-- Konten Utama (Maksimal Lebar Konsisten) -->
+    <div class="max-w-4xl mx-auto space-y-6">
+        
+        <!-- REKOMENDASI 1: Sistem Tab Navigasi Kategori -->
+        <div class="flex rounded-xl p-1.5 glass-panel border border-slate-200 gap-2">
+            <button onclick="switchTab('materi')" id="tabBtnMateri" class="flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition-all bg-sky-500 text-white shadow-sm cursor-pointer flex items-center justify-center gap-2">
+                <span>📖 Materi Pembelajaran</span>
+            </button>
+            <button onclick="switchTab('tugas')" id="tabBtnTugas" class="flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 cursor-pointer flex items-center justify-center gap-2">
+                <span>📝 Daftar Tugas</span>
+            </button>
+        </div>
+
+        <!-- TAB SECTION: MATERI -->
+        <div id="sectionMateri" class="space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-800">Daftar Materi Pembelajaran</h2>
+            </div>
             <div id="daftarMateriContainer" class="space-y-4">
                 <div class="glass-panel rounded-2xl p-6 text-center text-slate-500 font-medium">Memuat materi...</div>
             </div>
         </div>
-        <!-- Bagian Tugas -->
-        <div>
-            <h2 class="text-xl font-bold mb-4 text-slate-800 border-b border-slate-200 pb-2">📝 Daftar Tugas</h2>
+
+        <!-- TAB SECTION: TUGAS -->
+        <div id="sectionTugas" class="space-y-4 hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <h2 class="text-xl font-bold text-slate-800">Daftar Tugas & Evaluasi</h2>
+                
+                <!-- REKOMENDASI 3: Filter Status Tugas -->
+                <div class="flex rounded-lg bg-slate-200/70 p-1 border border-slate-300 text-xs font-semibold">
+                    <button onclick="filterTugas('semua')" id="filterSemua" class="px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs transition-all cursor-pointer">Semua</button>
+                    <button onclick="filterTugas('belum')" id="filterBelum" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer">Belum Selesai</button>
+                    <button onclick="filterTugas('sudah')" id="filterSudah" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer">Selesai</button>
+                </div>
+            </div>
+            
             <div id="daftarTugasContainer" class="space-y-4">
                 <div class="glass-panel rounded-2xl p-6 text-center text-slate-500 font-medium">Memuat tugas...</div>
             </div>
         </div>
+
     </div>
 
     <script>
         // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
         let currentUser = null;
+        let globalAssignments = []; // Menyimpan data tugas mentah untuk keperluan filter
+        let currentFilter = 'semua';
+        
         const urlParams = new URLSearchParams(window.location.search);
         const classId = urlParams.get('id');
 
@@ -82,6 +112,26 @@
             muatDaftarMateri(); 
             muatTugasSiswa();
         };
+
+        // --- REKOMENDASI 1: FUNGSI SWITCH TAB ---
+        function switchTab(tabName) {
+            const btnMateri = document.getElementById('tabBtnMateri');
+            const btnTugas = document.getElementById('tabBtnTugas');
+            const secMateri = document.getElementById('sectionMateri');
+            const secTugas = document.getElementById('sectionTugas');
+
+            if (tabName === 'materi') {
+                btnMateri.className = "flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition-all bg-sky-500 text-white shadow-sm cursor-pointer flex items-center justify-center gap-2";
+                btnTugas.className = "flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 cursor-pointer flex items-center justify-center gap-2";
+                secMateri.classList.remove('hidden');
+                secTugas.classList.add('hidden');
+            } else {
+                btnTugas.className = "flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition-all bg-sky-500 text-white shadow-sm cursor-pointer flex items-center justify-center gap-2";
+                btnMateri.className = "flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 cursor-pointer flex items-center justify-center gap-2";
+                secTugas.classList.remove('hidden');
+                secMateri.classList.add('hidden');
+            }
+        }
 
         // --- MUAT MATERI DENGAN EMBED OTOMATIS (YOUTUBE / DRIVE / PDF) ---
         async function muatDaftarMateri() {
@@ -148,102 +198,160 @@
                         }
 
                         container.innerHTML += `
-                            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm mb-4">
+                            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-4">
                                 <h3 class="text-lg font-bold text-slate-800 mb-1">${materi.judul_materi}</h3>
-                                <p class="text-xs font-medium text-slate-500 mb-2">Diposting: ${tgl}</p>
-                                <p class="text-sm text-slate-600 mb-2">${materi.deskripsi || ''}</p>
+                                <p class="text-xs font-medium text-slate-500 mb-3">Diposting: ${tgl}</p>
+                                <p class="text-sm text-slate-600 mb-3 whitespace-pre-line">${materi.deskripsi || ''}</p>
                                 ${embedHTML}
                             </div>
                         `;
                     });
                 } else {
-                    container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Belum ada materi.</div>`;
+                    container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Belum ada materi pembelajaran di kelas ini.</div>`;
                 }
             } catch (e) { 
                 container.innerHTML = `<div class="text-rose-500 text-center font-medium">Gagal memuat materi.</div>`; 
             }
         }
 
-        // --- MUAT TUGAS & TIMER COUNTDOWN ---
+        // --- MUAT TUGAS & RENDER ---
         async function muatTugasSiswa() {
             const container = document.getElementById('daftarTugasContainer');
             try {
                 const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_student_assignments', class_id: classId, student_id: currentUser.user_id }) });
                 const result = await res.json();
                 if (result.status === 'success' && result.data.length > 0) {
-                    container.innerHTML = '';
-                    result.data.forEach(tugas => {
-                        const deadlineDate = new Date(tugas.tenggat_waktu);
-                        const now = new Date();
-                        const isExpired = now > deadlineDate;
-                        const isSubmitted = tugas.status === "Sudah Mengumpulkan";
-                        
-                        const tglFormat = deadlineDate.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
-                        
-                        // Tema Background untuk Tugas
-                        const bgStatus = isSubmitted ? "bg-emerald-50/50 border-emerald-200" : (isExpired ? "bg-rose-50/50 border-rose-200" : "bg-white border-slate-200");
-                        
-                        let lampiranTugasGuru = tugas.file_url ? `<a href="${tugas.file_url}" target="_blank" class="inline-block mt-2 text-xs font-semibold text-sky-600 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-200 hover:bg-sky-100 transition-colors">🔗 Lihat Lampiran Tugas</a>` : '';
-                        
-                        let submissionHTML = isSubmitted ? `
-                            <div class="mt-4 pt-4 border-t border-slate-200">
-                                <div class="text-sm text-slate-600 mb-3 font-medium">Terkirim: <a href="${tugas.submitted_url}" target="_blank" class="text-sky-600 hover:underline break-all">Lihat File / Tautan</a></div>
-                                <div class="flex items-center justify-between">
-                                    <span class="bg-slate-100 px-3 py-1 rounded-lg border border-slate-300 text-sm font-bold text-slate-800">Nilai: ${tugas.nilai}</span>
-                                    ${!isExpired ? `<button onclick="document.getElementById('form_${tugas.assignment_id}').classList.toggle('hidden')" class="text-xs font-semibold text-sky-600 hover:underline cursor-pointer">Perbaiki Tugas</button>` : '<span class="text-xs font-medium text-slate-500">Tenggat lewat (Tidak bisa ubah)</span>'}
-                                </div>
-                            </div>` : "";
-                        
-                        let formHTML = "";
-                        if (isExpired && !isSubmitted) {
-                            formHTML = `<div class="mt-4 pt-4 border-t border-rose-200 text-center"><span class="text-sm text-rose-600 font-bold">❌ Waktu pengumpulan telah berakhir. Anda tidak dapat mengumpulkan tugas ini.</span></div>`;
-                        } else {
-                            formHTML = `
-                                <form id="form_${tugas.assignment_id}" class="mt-4 pt-4 border-t border-slate-200 ${isSubmitted ? 'hidden' : ''}" onsubmit="kirimTugas(event, '${tugas.assignment_id}', '${tugas.tenggat_waktu}')">
-                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Metode Pengumpulan</label>
-                                    <select id="metode_${tugas.assignment_id}" onchange="toggleMetode('${tugas.assignment_id}')" class="w-full rounded-lg text-sm px-4 py-2 modern-input mb-3">
-                                        <option value="link">🔗 Tautan (Link Drive / YouTube / Web)</option>
-                                        <option value="file">📁 Upload File (PDF / Gambar / Doc)</option>
-                                    </select>
-                                    
-                                    <div id="div_link_${tugas.assignment_id}">
-                                        <input type="url" id="url_${tugas.assignment_id}" class="w-full rounded-lg text-sm px-4 py-2 modern-input mb-4" placeholder="Masukkan Tautan (https://...)">
-                                    </div>
-                                    
-                                    <div id="div_file_${tugas.assignment_id}" class="hidden">
-                                        <input type="file" id="file_${tugas.assignment_id}" class="w-full rounded-lg text-sm px-4 py-1.5 modern-input mb-1" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-                                        <div class="text-[11px] font-semibold text-amber-600 mb-4">* Maksimal ukuran file dibatasi 200 KB.</div>
-                                    </div>
-                                    
-                                    <button type="submit" id="btn_${tugas.assignment_id}" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 rounded-lg text-sm transition-colors shadow-sm cursor-pointer">Kumpulkan Tugas</button>
-                                </form>
-                            `;
-                        }
-
-                        let badgeStatusText = isSubmitted ? 'Sudah Mengumpulkan' : (isExpired ? 'Waktu Habis' : 'Belum Mengumpulkan');
-                        let badgeColor = isSubmitted ? 'text-emerald-700 bg-emerald-100 border-emerald-300' : (isExpired ? 'text-rose-700 bg-rose-100 border-rose-300' : 'text-amber-700 bg-amber-100 border-amber-300');
-
-                        container.innerHTML += `
-                            <div class="rounded-2xl p-6 shadow-sm border ${bgStatus} mb-4">
-                                <div class="flex justify-between items-start gap-2 mb-2">
-                                    <h3 class="font-bold text-lg text-slate-800">${tugas.judul_tugas}</h3>
-                                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full border ${badgeColor} whitespace-nowrap">${badgeStatusText}</span>
-                                </div>
-                                <p class="text-sm font-medium text-slate-500 mb-1">Tenggat: ${tglFormat}</p>
-                                <p class="text-sm font-mono font-bold text-sky-600 mb-3" id="timer_${tugas.assignment_id}" data-deadline="${tugas.tenggat_waktu}">Menghitung sisa waktu...</p>
-                                ${lampiranTugasGuru}
-                                ${submissionHTML}
-                                ${formHTML}
-                            </div>`;
-                    });
-
+                    globalAssignments = result.data;
+                    renderDaftarTugas(globalAssignments);
                     mulaiTimerTugas();
                 } else {
-                    container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Belum ada tugas.</div>`;
+                    container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Belum ada tugas di kelas ini.</div>`;
                 }
             } catch (e) { 
                 container.innerHTML = `<div class="text-rose-500 text-center font-medium">Gagal memuat tugas.</div>`; 
             }
+        }
+
+        // --- REKOMENDASI 3: FUNGSI FILTER TUGAS ---
+        function filterTugas(status) {
+            currentFilter = status;
+            
+            // Atur gaya aktif tombol filter
+            document.getElementById('filterSemua').className = status === 'semua' ? "px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs transition-all cursor-pointer font-bold" : "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer";
+            document.getElementById('filterBelum').className = status === 'belum' ? "px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs transition-all cursor-pointer font-bold" : "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer";
+            document.getElementById('filterSudah').className = status === 'sudah' ? "px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs transition-all cursor-pointer font-bold" : "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer";
+
+            let filtered = globalAssignments;
+            const now = new Date();
+
+            if (status === 'belum') {
+                filtered = globalAssignments.filter(t => t.status !== "Sudah Mengumpulkan" && new Date(t.tenggat_waktu) > now);
+            } else if (status === 'sudah') {
+                filtered = globalAssignments.filter(t => t.status === "Sudah Mengumpulkan");
+            }
+
+            renderDaftarTugas(filtered);
+        }
+
+        // --- RENDER DAFTAR TUGAS DENGAN KOMPONEN PROFESIONAL ---
+        function renderDaftarTugas(dataTugas) {
+            const container = document.getElementById('daftarTugasContainer');
+            
+            if (dataTugas.length === 0) {
+                container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Tidak ada tugas pada filter ini.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            dataTugas.forEach(tugas => {
+                const deadlineDate = new Date(tugas.tenggat_waktu);
+                const now = new Date();
+                const isExpired = now > deadlineDate;
+                const isSubmitted = tugas.status === "Sudah Mengumpulkan";
+                
+                const tglFormat = deadlineDate.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
+                const bgStatus = isSubmitted ? "bg-emerald-50/50 border-emerald-200" : (isExpired ? "bg-rose-50/50 border-rose-200" : "bg-white border-slate-200");
+                
+                // REKOMENDASI 4: Tombol Akses Cepat ke Lampiran Tugas Guru
+                let lampiranTugasGuru = tugas.file_url ? `
+                    <div class="mt-3 p-3 bg-sky-50/80 rounded-xl border border-sky-200/80 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sky-600">📎</span>
+                            <span class="text-xs font-semibold text-slate-700">Lampiran Instruksi dari Guru</span>
+                        </div>
+                        <a href="${tugas.file_url}" target="_blank" class="text-xs font-bold text-white bg-sky-500 hover:bg-sky-600 px-3 py-1.5 rounded-lg shadow-xs transition-colors">Buka Berkas ↗</a>
+                    </div>` : '';
+                
+                // REKOMENDASI 2 & UMPAN BALIK: Tampilan Nilai & Catatan/Feedback dari Guru
+                let feedbackSection = '';
+                if (isSubmitted && tugas.feedback && tugas.feedback.trim() !== '') {
+                    feedbackSection = `
+                        <div class="mt-2.5 p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900">
+                            <strong class="font-bold">💬 Catatan / Umpan Balik Guru:</strong><br>
+                            <span class="mt-1 inline-block">${tugas.feedback}</span>
+                        </div>
+                    `;
+                }
+
+                let submissionHTML = isSubmitted ? `
+                    <div class="mt-4 pt-4 border-t border-slate-200 bg-slate-50/60 p-4 rounded-xl border">
+                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Status Pengumpulan Anda</div>
+                        <div class="text-sm text-slate-700 mb-3 font-medium flex items-center justify-between">
+                            <span>Tautan File Terkirim:</span>
+                            <a href="${tugas.submitted_url}" target="_blank" class="text-sky-600 font-bold hover:underline truncate max-w-[200px] sm:max-w-xs">Lihat File / Tautan ↗</a>
+                        </div>
+                        <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-slate-200 shadow-2xs">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <span class="text-xs font-bold text-slate-700">Nilai Akhir: <strong class="text-base text-emerald-600">${tugas.nilai !== undefined && tugas.nilai !== "" ? tugas.nilai : 'Belum Dinilai'}</strong></span>
+                            </div>
+                            ${!isExpired ? `<button onclick="document.getElementById('form_${tugas.assignment_id}').classList.toggle('hidden')" class="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline cursor-pointer bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">Perbaiki Tugas ↺</button>` : '<span class="text-xs font-medium text-slate-400">Tenggat lewat</span>'}
+                        </div>
+                        ${feedbackSection}
+                    </div>` : "";
+                
+                let formHTML = "";
+                if (isExpired && !isSubmitted) {
+                    formHTML = `<div class="mt-4 pt-4 border-t border-rose-200 text-center"><span class="text-sm text-rose-600 font-bold">❌ Waktu pengumpulan telah berakhir. Anda tidak dapat mengumpulkan tugas ini.</span></div>`;
+                } else {
+                    formHTML = `
+                        <form id="form_${tugas.assignment_id}" class="mt-4 pt-4 border-t border-slate-200 ${isSubmitted ? 'hidden' : ''}" onsubmit="kirimTugas(event, '${tugas.assignment_id}', '${tugas.tenggat_waktu}')">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Metode Pengumpulan</label>
+                            <select id="metode_${tugas.assignment_id}" onchange="toggleMetode('${tugas.assignment_id}')" class="w-full rounded-lg text-sm px-4 py-2 modern-input mb-3">
+                                <option value="link">🔗 Tautan (Link Drive / YouTube / Web)</option>
+                                <option value="file">📁 Upload File (PDF / Gambar / Doc)</option>
+                            </select>
+                            
+                            <div id="div_link_${tugas.assignment_id}">
+                                <input type="url" id="url_${tugas.assignment_id}" class="w-full rounded-lg text-sm px-4 py-2 modern-input mb-4" placeholder="Masukkan Tautan (https://...)">
+                            </div>
+                            
+                            <div id="div_file_${tugas.assignment_id}" class="hidden">
+                                <input type="file" id="file_${tugas.assignment_id}" class="w-full rounded-lg text-sm px-4 py-1.5 modern-input mb-1" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                <div class="text-[11px] font-semibold text-amber-600 mb-4">* Maksimal ukuran file dibatasi 200 KB.</div>
+                            </div>
+                            
+                            <button type="submit" id="btn_${tugas.assignment_id}" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-sm cursor-pointer">Kumpulkan Tugas Sekarang</button>
+                        </form>
+                    `;
+                }
+
+                let badgeStatusText = isSubmitted ? 'Sudah Mengumpulkan' : (isExpired ? 'Waktu Habis' : 'Belum Mengumpulkan');
+                let badgeColor = isSubmitted ? 'text-emerald-700 bg-emerald-100 border-emerald-300' : (isExpired ? 'text-rose-700 bg-rose-100 border-rose-300' : 'text-amber-700 bg-amber-100 border-amber-300');
+
+                container.innerHTML += `
+                    <div class="rounded-2xl p-6 shadow-sm border ${bgStatus} mb-4 transition-all hover:shadow-md">
+                        <div class="flex justify-between items-start gap-2 mb-2">
+                            <h3 class="font-bold text-lg text-slate-800">${tugas.judul_tugas}</h3>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full border ${badgeColor} whitespace-nowrap">${badgeStatusText}</span>
+                        </div>
+                        <p class="text-sm font-medium text-slate-500 mb-1">Tenggat: ${tglFormat}</p>
+                        <p class="text-sm font-mono font-bold text-sky-600 mb-3" id="timer_${tugas.assignment_id}" data-deadline="${tugas.tenggat_waktu}">Menghitung sisa waktu...</p>
+                        ${lampiranTugasGuru}
+                        ${submissionHTML}
+                        ${formHTML}
+                    </div>`;
+            });
         }
 
         // --- LIVE COUNTDOWN TIMER ---
@@ -352,7 +460,7 @@
                 alert(err.message || "Terjadi kesalahan jaringan.");
             } finally { 
                 btn.disabled = false; 
-                btn.innerHTML = 'Kumpulkan Tugas'; 
+                btn.innerHTML = 'Kumpulkan Tugas Sekarang'; 
             }
         }
     </script>

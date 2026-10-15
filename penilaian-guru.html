@@ -36,39 +36,91 @@
 </head>
 <body class="p-4 md:p-8">
 
-    <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center max-w-4xl mx-auto">
+    <!-- Navbar -->
+    <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center max-w-5xl mx-auto">
         <div class="flex items-center gap-4">
             <button onclick="window.history.back()" class="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             </button>
             <div>
-                <div class="text-xs text-sky-600 font-bold uppercase tracking-wider">Penilaian Tugas</div>
+                <div class="text-xs text-sky-600 font-bold uppercase tracking-wider">Panel Penilaian & Umpan Balik</div>
                 <div class="text-lg font-bold text-slate-800" id="judulTugasDisplay">Memuat Judul...</div>
             </div>
         </div>
+        <div class="text-sm font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 shadow-xs">Mode Guru</div>
     </nav>
 
-    <div class="glass-panel rounded-2xl p-6 max-w-4xl mx-auto">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="border-b border-slate-200 text-slate-500 text-sm">
-                        <th class="py-3 px-4 font-semibold">Nama Siswa</th>
-                        <th class="py-3 px-4 font-semibold text-center">Tautan Jawaban / File</th>
-                        <th class="py-3 px-4 font-semibold text-center w-32">Nilai (0-100)</th>
-                        <th class="py-3 px-4 font-semibold text-center w-24">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="tabelPengumpulan">
-                    <tr><td colspan="4" class="text-center py-8 text-slate-500 font-medium">Memuat data pengumpulan...</td></tr>
-                </tbody>
-            </table>
+    <div class="max-w-5xl mx-auto space-y-6">
+        
+        <!-- Kartu Ringkasan Statistik Penilaian -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="glass-panel rounded-2xl p-4 flex items-center gap-4 border border-slate-200">
+                <div class="bg-sky-100 p-3 rounded-xl text-sky-600 font-bold text-lg">📊</div>
+                <div>
+                    <div class="text-xl font-bold text-slate-800" id="statTotal">0</div>
+                    <div class="text-xs font-semibold text-slate-500 uppercase">Total Pengumpulan</div>
+                </div>
+            </div>
+            <div class="glass-panel rounded-2xl p-4 flex items-center gap-4 border border-slate-200">
+                <div class="bg-emerald-100 p-3 rounded-xl text-emerald-600 font-bold text-lg">✅</div>
+                <div>
+                    <div class="text-xl font-bold text-slate-800" id="statSudahDinilai">0</div>
+                    <div class="text-xs font-semibold text-slate-500 uppercase">Sudah Dinilai</div>
+                </div>
+            </div>
+            <div class="glass-panel rounded-2xl p-4 flex items-center gap-4 border border-slate-200">
+                <div class="bg-amber-100 p-3 rounded-xl text-amber-600 font-bold text-lg">⏳</div>
+                <div>
+                    <div class="text-xl font-bold text-slate-800" id="statBelumDinilai">0</div>
+                    <div class="text-xs font-semibold text-slate-500 uppercase">Belum Dinilai</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Utama Tabel -->
+        <div class="glass-panel rounded-2xl p-6">
+            
+            <!-- Kontrol Pencarian & Filter -->
+            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+                <div class="relative flex-1">
+                    <input type="text" id="inputCariSiswa" oninput="handleSearch()" placeholder="Cari berdasarkan nama siswa..." class="w-full rounded-lg pl-10 pr-4 py-2 text-sm modern-input">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <div class="flex rounded-lg bg-slate-200/70 p-1 border border-slate-300 text-xs font-semibold self-start sm:self-auto">
+                    <button onclick="filterNilai('semua')" id="filtSemua" class="px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs transition-all cursor-pointer">Semua</button>
+                    <button onclick="filterNilai('belum')" id="filtBelum" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer">Belum Dinilai</button>
+                    <button onclick="filterNilai('sudah')" id="filtSudah" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer">Sudah Dinilai</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-500 text-sm">
+                            <th class="py-3 px-4 font-semibold">Nama Siswa</th>
+                            <th class="py-3 px-4 font-semibold text-center">Tautan / File</th>
+                            <th class="py-3 px-4 font-semibold text-center w-28">Nilai (0-100)</th>
+                            <th class="py-3 px-4 font-semibold">Umpan Balik / Catatan Guru</th>
+                            <th class="py-3 px-4 font-semibold text-center w-24">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelPengumpulan">
+                        <tr><td colspan="5" class="text-center py-8 text-slate-500 font-medium">Memuat data pengumpulan...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script>
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec'; // MASUKKAN URL GAS ANDA
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
         
+        let globalSubmissions = [];
+        let currentFilter = 'semua';
+        let searchQuery = '';
+
         const urlParams = new URLSearchParams(window.location.search);
         const taskId = urlParams.get('id_tugas');
         const taskTitle = urlParams.get('judul_tugas');
@@ -90,36 +142,91 @@
                 const result = await response.json();
                 
                 if (result.status === 'success' && result.data.length > 0) {
-                    tbody.innerHTML = '';
-                    result.data.forEach(sub => {
-                        tbody.innerHTML += `
-                            <tr class="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                                <td class="py-4 px-4 font-bold text-slate-800">${sub.student_name}</td>
-                                <td class="py-4 px-4 text-center">
-                                    <a href="${sub.file_url}" target="_blank" class="text-sky-600 hover:text-sky-700 hover:underline flex items-center justify-center gap-1 font-semibold">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                        Buka File
-                                    </a>
-                                </td>
-                                <td class="py-4 px-4">
-                                    <input type="number" id="nilai_${sub.submission_id}" value="${sub.nilai}" min="0" max="100" class="w-full rounded px-2 py-1.5 text-center modern-input">
-                                </td>
-                                <td class="py-4 px-4 text-center">
-                                    <button onclick="simpanNilai('${sub.submission_id}')" id="btn_${sub.submission_id}" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm px-3 py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer">Simpan</button>
-                                </td>
-                            </tr>
-                        `;
-                    });
+                    globalSubmissions = result.data;
+                    updateStatsAndRender();
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-500 font-medium border-b border-slate-200">Belum ada siswa yang mengumpulkan tugas ini.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-500 font-medium border-b border-slate-200">Belum ada siswa yang mengumpulkan tugas ini.</td></tr>`;
+                    updateStats(0, 0, 0);
                 }
             } catch (error) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-rose-500 font-medium">Gagal memuat data.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-rose-500 font-medium">Gagal memuat data.</td></tr>`;
             }
+        }
+
+        function updateStats(total, sudah, belum) {
+            document.getElementById('statTotal').innerText = total;
+            document.getElementById('statSudahDinilai').innerText = sudah;
+            document.getElementById('statBelumDinilai').innerText = belum;
+        }
+
+        function filterNilai(status) {
+            currentFilter = status;
+            document.getElementById('filtSemua').className = status === 'semua' ? "px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs font-bold transition-all cursor-pointer" : "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer";
+            document.getElementById('filtBelum').className = status === 'belum' ? "px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs font-bold transition-all cursor-pointer" : "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer";
+            document.getElementById('filtSudah').className = status === 'sudah' ? "px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs font-bold transition-all cursor-pointer" : "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer";
+            
+            updateStatsAndRender();
+        }
+
+        function handleSearch() {
+            searchQuery = document.getElementById('inputCariSiswa').value.toLowerCase();
+            updateStatsAndRender();
+        }
+
+        function updateStatsAndRender() {
+            let total = globalSubmissions.length;
+            let sudah = globalSubmissions.filter(s => s.nilai !== undefined && s.nilai !== "" && s.nilai !== null).length;
+            let belum = total - sudah;
+            updateStats(total, sudah, belum);
+
+            let filtered = globalSubmissions.filter(sub => {
+                let matchSearch = sub.student_name.toLowerCase().includes(searchQuery);
+                let hasGrade = sub.nilai !== undefined && sub.nilai !== "" && sub.nilai !== null;
+                
+                if (currentFilter === 'belum') return matchSearch && !hasGrade;
+                if (currentFilter === 'sudah') return matchSearch && hasGrade;
+                return matchSearch;
+            });
+
+            renderTabel(filtered);
+        }
+
+        function renderTabel(data) {
+            const tbody = document.getElementById('tabelPengumpulan');
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-500 font-medium border-b border-slate-200">Tidak ada data siswa yang cocok dengan pencarian / filter.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach(sub => {
+                const feedbackVal = sub.feedback !== undefined && sub.feedback !== null ? sub.feedback : '';
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                        <td class="py-4 px-4 font-bold text-slate-800">${sub.student_name}</td>
+                        <td class="py-4 px-4 text-center">
+                            <a href="${sub.file_url}" target="_blank" class="text-sky-600 hover:text-sky-700 hover:underline flex items-center justify-center gap-1 font-semibold text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                Buka Berkas ↗
+                            </a>
+                        </td>
+                        <td class="py-4 px-4">
+                            <input type="number" id="nilai_${sub.submission_id}" value="${sub.nilai !== undefined ? sub.nilai : ''}" min="0" max="100" class="w-full rounded px-2 py-1.5 text-center modern-input">
+                        </td>
+                        <td class="py-4 px-4">
+                            <input type="text" id="feedback_${sub.submission_id}" value="${feedbackVal}" placeholder="Tulis catatan/umpan balik..." class="w-full rounded px-3 py-1.5 text-sm modern-input">
+                        </td>
+                        <td class="py-4 px-4 text-center">
+                            <button onclick="simpanNilai('${sub.submission_id}')" id="btn_${sub.submission_id}" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm px-3 py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer">Simpan</button>
+                        </td>
+                    </tr>
+                `;
+            });
         }
 
         async function simpanNilai(submissionId) {
             const inputNilai = document.getElementById(`nilai_${submissionId}`).value;
+            const inputFeedback = document.getElementById(`feedback_${submissionId}`).value;
             const btn = document.getElementById(`btn_${submissionId}`);
             
             if (inputNilai === "") { alert("Masukkan angka nilai terlebih dahulu."); return; }
@@ -129,18 +236,28 @@
             try {
                 const response = await fetch(scriptURL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'update_grade', submission_id: submissionId, nilai: inputNilai }),
+                    body: JSON.stringify({ 
+                        action: 'update_grade', 
+                        submission_id: submissionId, 
+                        nilai: inputNilai,
+                        feedback: inputFeedback 
+                    }),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                 });
                 const result = await response.json();
                 
                 if (result.status === 'success') {
+                    const item = globalSubmissions.find(s => s.submission_id == submissionId);
+                    if (item) {
+                        item.nilai = inputNilai;
+                        item.feedback = inputFeedback;
+                    }
+                    updateStatsAndRender();
+
                     btn.classList.replace('bg-emerald-500', 'bg-sky-500');
-                    btn.classList.replace('hover:bg-emerald-600', 'hover:bg-sky-600');
                     btn.innerText = "Tersimpan";
                     setTimeout(() => { 
                         btn.classList.replace('bg-sky-500', 'bg-emerald-500'); 
-                        btn.classList.replace('hover:bg-sky-600', 'hover:bg-emerald-600'); 
                         btn.innerText = "Simpan"; 
                         btn.disabled = false; 
                     }, 2000);
