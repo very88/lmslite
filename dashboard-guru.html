@@ -47,7 +47,7 @@
         <div class="text-xl font-bold text-sky-600">LMS Workspace</div>
         <div class="flex items-center gap-4">
             <div class="text-sm font-medium text-slate-500">Halo, <span id="namaGuru" class="font-bold text-slate-800">Guru</span></div>
-            <button onclick="logout()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all">Keluar</button>
+            <button onclick="logout()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer">Keluar</button>
         </div>
     </nav>
 
@@ -62,7 +62,7 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Nama Kelas / Mata Pelajaran</label>
                     <input type="text" id="nama_kelas" required class="w-full rounded-lg px-4 py-2 modern-input" placeholder="Contoh: PJOK Kelas X-A">
                 </div>
-                <button type="submit" id="btnSubmit" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-md">Buat Kelas</button>
+                <button type="submit" id="btnSubmit" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-md cursor-pointer">Buat Kelas</button>
             </form>
 
             <div id="hasilBuatKelas" class="mt-6 hidden bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center">
@@ -93,8 +93,8 @@
                     <input type="text" id="edit_nama_kelas" required class="w-full rounded-lg px-4 py-2 modern-input-amber">
                 </div>
                 <div class="flex gap-3">
-                    <button type="button" onclick="document.getElementById('modalEditKelas').classList.add('hidden')" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 rounded-lg transition-colors">Batal</button>
-                    <button type="submit" id="btnSimpanEditKelas" class="w-1/2 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 rounded-lg transition-colors">Simpan</button>
+                    <button type="button" onclick="document.getElementById('modalEditKelas').classList.add('hidden')" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 rounded-lg cursor-pointer transition-colors">Batal</button>
+                    <button type="submit" id="btnSimpanEditKelas" class="w-1/2 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 rounded-lg cursor-pointer transition-colors">Simpan</button>
                 </div>
             </form>
         </div>
@@ -111,13 +111,21 @@
                 return;
             }
             
-            currentUser = JSON.parse(sessionData);
-            if (currentUser.role !== 'Guru') {
+            try {
+                currentUser = JSON.parse(sessionData);
+            } catch (e) {
+                localStorage.removeItem('lms_user');
                 window.location.href = 'index.html';
                 return;
             }
 
-            document.getElementById('namaGuru').innerText = currentUser.nama_lengkap;
+            if (!currentUser || currentUser.role !== 'Guru') {
+                alert("Akses ditolak! Halaman ini khusus untuk Guru.");
+                window.location.href = 'index.html';
+                return;
+            }
+
+            document.getElementById('namaGuru').innerText = currentUser.nama_lengkap || 'Guru';
             muatDaftarKelas();
         };
 
@@ -128,6 +136,7 @@
 
         async function muatDaftarKelas() {
             const container = document.getElementById('daftarKelasContainer');
+            if (!container) return;
             
             try {
                 const response = await fetch(scriptURL, {
@@ -141,7 +150,7 @@
                 
                 const result = await response.json();
                 
-                if (result.status === 'success' && result.data.length > 0) {
+                if (result.status === 'success' && result.data && result.data.length > 0) {
                     container.innerHTML = ''; 
                     
                     result.data.forEach(kelas => {
@@ -159,10 +168,10 @@
                                         Masuk ke Kelas
                                     </a>
                                     <div class="flex gap-2">
-                                        <button onclick="bukaModalEditKelas('${kelas.class_id}', '${safeNamaKelas}')" class="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-600 text-sm font-semibold py-1.5 rounded-lg transition-colors border border-amber-200">
+                                        <button onclick="bukaModalEditKelas('${kelas.class_id}', '${safeNamaKelas}')" class="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-600 text-sm font-semibold py-1.5 rounded-lg transition-colors border border-amber-200 cursor-pointer">
                                             Edit
                                         </button>
-                                        <button onclick="hapusKelas('${kelas.class_id}', '${safeNamaKelas}')" class="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold py-1.5 rounded-lg transition-colors border border-rose-200">
+                                        <button onclick="hapusKelas('${kelas.class_id}', '${safeNamaKelas}')" class="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold py-1.5 rounded-lg transition-colors border border-rose-200 cursor-pointer">
                                             Hapus
                                         </button>
                                     </div>
@@ -178,7 +187,11 @@
                     `;
                 }
             } catch (error) {
-                container.innerHTML = `<div class="text-rose-500 col-span-2 text-center font-medium">Gagal memuat daftar kelas.</div>`;
+                container.innerHTML = `
+                    <div class="text-rose-500 col-span-2 text-center font-medium py-4">
+                        Gagal memuat daftar kelas. 
+                        <button onclick="muatDaftarKelas()" class="underline font-bold ml-1 cursor-pointer">Coba Lagi</button>
+                    </div>`;
             }
         }
 

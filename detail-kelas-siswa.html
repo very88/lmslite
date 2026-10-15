@@ -161,38 +161,43 @@
             if (!localStorage.getItem('lms_user') || JSON.parse(localStorage.getItem('lms_user')).role !== 'Siswa') return window.location.href = 'index.html';
             currentUser = JSON.parse(localStorage.getItem('lms_user'));
             document.getElementById('namaKelasTitle').innerText = urlParams.get('nama') || "Detail Kelas";
-            muatDataLengkapSiswa(); 
-            muatTugasSiswa();
+            
+            // Panggil 1 fungsi batch request super cepat (Anti-Lag)
+            muatDataRuangKelasSiswa(); 
         };
 
-        // --- FUNGSI GABUNGAN MEMUAT MATERI, STATUS BACA & PERTANYAAN/FEEDBACK GURU ---
-        async function muatDataLengkapSiswa() {
+        // --- FUNGSI BATCH GABUNGAN (ANTI-LAG) ---
+        async function muatDataRuangKelasSiswa() {
             try {
-                const resMat = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_class_materials', class_id: classId }) });
-                const resultMat = await resMat.json();
-                
-                const resRead = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_material_reads' }) });
-                const resultRead = await resRead.json();
+                const res = await fetch(scriptURL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ 
+                        action: 'get_student_room_data', 
+                        class_id: classId, 
+                        student_id: currentUser.user_id 
+                    }) 
+                });
+                const result = await res.json();
 
-                const resQ = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_teacher_questions', class_id: classId }) });
-                const resultQ = await resQ.json();
+                if (result.status === 'success') {
+                    globalMaterials = result.materials || [];
+                    globalReads = result.reads || [];
+                    globalStudentQuestions = result.questions || [];
+                    globalAssignments = result.assignments || [];
 
-                if (resultMat.status === 'success') {
-                    globalMaterials = resultMat.data || [];
-                    globalReads = resultRead.status === 'success' ? (resultRead.data || []) : [];
-                    globalStudentQuestions = resultQ.status === 'success' ? (resultQ.data || []) : [];
                     renderDaftarMateri();
+                    renderDaftarTugas(globalAssignments);
+                    mulaiTimerTugas();
                     hitungProgressKelas();
                 } else {
-                    document.getElementById('daftarMateriContainer').innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Belum ada materi pembelajaran di kelas ini.</div>`;
+                    document.getElementById('daftarMateriContainer').innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Gagal memuat data kelas.</div>`;
+                    document.getElementById('daftarTugasContainer').innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Gagal memuat data kelas.</div>`;
                 }
             } catch (e) {
-                document.getElementById('daftarMateriContainer').innerHTML = `<div class="text-rose-500 text-center font-medium">Gagal memuat materi.</div>`;
+                console.error(e);
+                document.getElementById('daftarMateriContainer').innerHTML = `<div class="text-rose-500 text-center font-medium">Terjadi kesalahan jaringan.</div>`;
+                document.getElementById('daftarTugasContainer').innerHTML = `<div class="text-rose-500 text-center font-medium">Terjadi kesalahan jaringan.</div>`;
             }
-        }
-
-        async function muatDaftarMateri() {
-            await muatDataLengkapSiswa();
         }
 
         // --- RENDER MATERI DENGAN VERIFIKASI WAKTU, SCROLL, TOMBOL TANYA, & FEEDBACK GURU ---
@@ -403,16 +408,16 @@
                 if (result.status === 'success' || res.ok) {
                     alert("Pertanyaan berhasil dikirim ke guru pengajar!");
                     tutupModalTanya();
-                    muatDataLengkapSiswa(); // Refresh agar pertanyaan langsung tampil di bawah materi
+                    muatDataRuangKelasSiswa(); // Refresh data instan
                 } else {
                     alert(`Catatan: ${result.message || 'Berhasil dikirim'}`);
                     tutupModalTanya();
-                    muatDataLengkapSiswa();
+                    muatDataRuangKelasSiswa();
                 }
             } catch (e) {
                 alert("Pertanyaan berhasil dicatat / dikirim.");
                 tutupModalTanya();
-                muatDataLengkapSiswa();
+                muatDataRuangKelasSiswa();
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Kirim Pertanyaan";
@@ -504,7 +509,7 @@
                 });
                 const result = await res.json();
                 if (result.status === 'success') {
-                    muatDataLengkapSiswa(); 
+                    muatDataRuangKelasSiswa(); 
                 } else {
                     alert(`Gagal: ${result.message}`);
                 }
@@ -530,25 +535,6 @@
                 btnMateri.className = "flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 cursor-pointer flex items-center justify-center gap-2";
                 secTugas.classList.remove('hidden');
                 secMateri.classList.add('hidden');
-            }
-        }
-
-        // --- MUAT TUGAS & RENDER ---
-        async function muatTugasSiswa() {
-            const container = document.getElementById('daftarTugasContainer');
-            try {
-                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_student_assignments', class_id: classId, student_id: currentUser.user_id }) });
-                const result = await res.json();
-                if (result.status === 'success' && result.data.length > 0) {
-                    globalAssignments = result.data;
-                    renderDaftarTugas(globalAssignments);
-                    mulaiTimerTugas();
-                    hitungProgressKelas();
-                } else {
-                    container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Belum ada tugas di kelas ini.</div>`;
-                }
-            } catch (e) { 
-                container.innerHTML = `<div class="text-rose-500 text-center font-medium">Gagal memuat tugas.</div>`; 
             }
         }
 
@@ -812,7 +798,7 @@
                 
                 if (result.status === 'success') {
                     alert("Jawaban tugas berhasil dikirim!");
-                    muatTugasSiswa(); 
+                    muatDataRuangKelasSiswa(); // Muat ulang data secara instan
                 } else {
                     alert(`Gagal: ${result.message}`);
                 }

@@ -267,6 +267,8 @@
 
         async function muatKelasSiswa() {
             const container = document.getElementById('daftarKelasContainer');
+            if (!container) return;
+
             try {
                 const response = await fetch(scriptURL, {
                     method: 'POST',
@@ -348,7 +350,11 @@
                     document.getElementById('statTugasSelesai').innerText = 0;
                 }
             } catch (error) {
-                container.innerHTML = `<div class="text-rose-500 col-span-2 text-center font-medium py-4">Gagal memuat daftar kelas. Pastikan koneksi internet stabil.</div>`;
+                container.innerHTML = `
+                    <div class="text-rose-500 col-span-2 text-center font-medium py-4">
+                        Gagal memuat daftar kelas. 
+                        <button onclick="muatKelasSiswa()" class="underline font-bold ml-1 cursor-pointer">Coba Lagi</button>
+                    </div>`;
             }
         }
 
