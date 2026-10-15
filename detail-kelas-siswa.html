@@ -20,6 +20,12 @@
             border: 1px solid rgba(226, 232, 240, 0.8); 
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); 
         }
+        /* Custom scrollbar untuk dokumen */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
         /* Input Styling modern */
         .modern-input {
             background-color: #ffffff;
@@ -55,7 +61,7 @@
     <!-- Konten Utama (Maksimal Lebar Konsisten) -->
     <div class="max-w-4xl mx-auto space-y-6">
         
-        <!-- REKOMENDASI 1: Sistem Tab Navigasi Kategori -->
+        <!-- Sistem Tab Navigasi Kategori -->
         <div class="flex rounded-xl p-1.5 glass-panel border border-slate-200 gap-2">
             <button onclick="switchTab('materi')" id="tabBtnMateri" class="flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition-all bg-sky-500 text-white shadow-sm cursor-pointer flex items-center justify-center gap-2">
                 <span>📖 Materi Pembelajaran</span>
@@ -80,7 +86,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <h2 class="text-xl font-bold text-slate-800">Daftar Tugas & Evaluasi</h2>
                 
-                <!-- REKOMENDASI 3: Filter Status Tugas -->
+                <!-- Filter Status Tugas -->
                 <div class="flex rounded-lg bg-slate-200/70 p-1 border border-slate-300 text-xs font-semibold">
                     <button onclick="filterTugas('semua')" id="filterSemua" class="px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs transition-all cursor-pointer">Semua</button>
                     <button onclick="filterTugas('belum')" id="filterBelum" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer">Belum Selesai</button>
@@ -99,8 +105,13 @@
         // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
         let currentUser = null;
-        let globalAssignments = []; // Menyimpan data tugas mentah untuk keperluan filter
+        let globalAssignments = []; 
+        let globalMaterials = [];
+        let globalReads = [];
         let currentFilter = 'semua';
+        let activeTimers = {};
+        let statusScrollBawah = {};
+        let statusWaktuTuntas = {};
         
         const urlParams = new URLSearchParams(window.location.search);
         const classId = urlParams.get('id');
@@ -109,11 +120,241 @@
             if (!localStorage.getItem('lms_user') || JSON.parse(localStorage.getItem('lms_user')).role !== 'Siswa') return window.location.href = 'index.html';
             currentUser = JSON.parse(localStorage.getItem('lms_user'));
             document.getElementById('namaKelasTitle').innerText = urlParams.get('nama') || "Detail Kelas";
-            muatDaftarMateri(); 
+            muatDataLengkapSiswa(); 
             muatTugasSiswa();
         };
 
-        // --- REKOMENDASI 1: FUNGSI SWITCH TAB ---
+        // --- FUNGSI GABUNGAN MEMUAT MATERI & STATUS BACA ---
+        async function muatDataLengkapSiswa() {
+            try {
+                const resMat = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_class_materials', class_id: classId }) });
+                const resultMat = await resMat.json();
+                
+                const resRead = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_material_reads' }) });
+                const resultRead = await resRead.json();
+
+                if (resultMat.status === 'success') {
+                    globalMaterials = resultMat.data || [];
+                    globalReads = resultRead.status === 'success' ? (resultRead.data || []) : [];
+                    renderDaftarMateri();
+                } else {
+                    document.getElementById('daftarMateriContainer').innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Belum ada materi pembelajaran di kelas ini.</div>`;
+                }
+            } catch (e) {
+                document.getElementById('daftarMateriContainer').innerHTML = `<div class="text-rose-500 text-center font-medium">Gagal memuat materi.</div>`;
+            }
+        }
+
+        async function muatDaftarMateri() {
+            await muatDataLengkapSiswa();
+        }
+
+        // --- RENDER MATERI DENGAN VERIFIKASI WAKTU & SCROLL NYATA ---
+        function renderDaftarMateri() {
+            const container = document.getElementById('daftarMateriContainer');
+            if (globalMaterials.length === 0) {
+                container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Belum ada materi pembelajaran di kelas ini.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            globalMaterials.forEach(materi => {
+                const tgl = new Date(materi.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' });
+                const isRead = globalReads.some(r => r.material_id === materi.material_id && r.student_id === currentUser.user_id);
+
+                let badgeStatusMateri = isRead 
+                    ? `<span class="bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Sudah Dibaca / Ditonton</span>`
+                    : `<span class="bg-amber-50 border border-amber-200 text-amber-700 font-semibold text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Belum Dibaca</span>`;
+
+                let embedHTML = '';
+                let isYouTube = false;
+
+                if (materi.file_url) {
+                    let url = materi.file_url;
+                    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                        isYouTube = true;
+                        let videoId = '';
+                        if (url.includes('youtu.be/')) {
+                            videoId = url.split('youtu.be/')[1].split('?')[0];
+                        } else if (url.includes('watch?v=')) {
+                            videoId = url.split('watch?v=')[1].split('&')[0];
+                        }
+                        if (videoId) {
+                            embedHTML = `
+                                <div class="mt-4 relative w-full overflow-hidden rounded-xl shadow-md" style="padding-top: 56.25%;">
+                                    <iframe class="absolute top-0 left-0 w-full h-full border-0 rounded-xl" 
+                                        src="https://www.youtube.com/embed/${videoId}" 
+                                        title="YouTube video player" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                        allowfullscreen>
+                                    </iframe>
+                                </div>
+                            `;
+                        }
+                    } else if (url.includes('drive.google.com')) {
+                        let embedUrl = url;
+                        if (url.includes('/view')) {
+                            embedUrl = url.replace('/view', '/preview');
+                        }
+                        embedHTML = `
+                            <div id="scroll_box_${materi.material_id}" onscroll="cekScrollBawah('${materi.material_id}')" class="mt-4 w-full h-64 md:h-96 rounded-xl overflow-y-auto border border-slate-200 bg-slate-50 shadow-inner relative custom-scroll">
+                                <iframe src="${embedUrl}" class="w-full h-[500px] border-0 pointer-events-none"></iframe>
+                                <div class="absolute bottom-2 right-2 bg-slate-800/80 text-white text-[10px] px-2 py-1 rounded pointer-events-none">Gulir sampai bawah untuk verifikasi</div>
+                            </div>
+                            <div class="mt-2 text-right">
+                                <a href="${url}" target="_blank" class="text-xs font-semibold text-sky-600 hover:underline inline-flex items-center gap-1">Buka Dokumen di Tab Baru ↗</a>
+                            </div>
+                        `;
+                    } else {
+                        embedHTML = `
+                            <div id="scroll_box_${materi.material_id}" onscroll="cekScrollBawah('${materi.material_id}')" class="mt-4 w-full h-64 md:h-80 rounded-xl overflow-y-auto border border-slate-200 bg-slate-50 shadow-inner relative custom-scroll">
+                                <iframe src="${url}" class="w-full h-[500px] border-0 pointer-events-none"></iframe>
+                                <div class="absolute bottom-2 right-2 bg-slate-800/80 text-white text-[10px] px-2 py-1 rounded pointer-events-none">Gulir sampai bawah untuk verifikasi</div>
+                            </div>
+                        `;
+                    }
+                }
+
+                let actionButton = '';
+                if (isRead) {
+                    actionButton = `<div class="text-xs font-bold text-emerald-600 bg-emerald-50/60 border border-emerald-200 px-3 py-2 rounded-xl text-center">✔ Anda telah menyelesaikan materi ini</div>`;
+                } else if (isYouTube) {
+                    actionButton = `
+                        <div class="space-y-2 bg-sky-50/50 p-4 rounded-xl border border-sky-100">
+                            <div class="flex justify-between items-center text-xs font-semibold text-slate-700">
+                                <span id="label_timer_${materi.material_id}">⏳ Syarat Tonton: Minimal 90 detik</span>
+                                <span id="countdown_${materi.material_id}" class="text-sky-600 font-bold">90 dtk</span>
+                            </div>
+                            <button id="btn_materi_${materi.material_id}" onclick="tandaiSudahDibaca('${materi.material_id}')" disabled class="w-full bg-slate-300 text-slate-500 font-semibold text-xs py-2 px-4 rounded-xl transition-colors cursor-not-allowed">Tandai Sudah Ditonton ✓</button>
+                            <button id="btn_mulai_tonton_${materi.material_id}" onclick="mulaiTimerVideo('${materi.material_id}', 90)" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs py-2 px-4 rounded-xl transition-colors shadow-xs cursor-pointer">▶ Mulai Hitung Waktu Menonton</button>
+                        </div>`;
+                } else {
+                    actionButton = `
+                        <div class="space-y-2 bg-amber-50/50 p-4 rounded-xl border border-amber-100">
+                            <div class="flex justify-between items-center text-xs font-semibold text-slate-700">
+                                <span id="label_baca_${materi.material_id}">📖 Syarat Baca: Gulir ke bawah & waktu 65 detik</span>
+                                <span id="countdown_baca_${materi.material_id}" class="text-amber-600 font-bold">65 dtk</span>
+                            </div>
+                            <button id="btn_materi_${materi.material_id}" onclick="tandaiSudahDibaca('${materi.material_id}')" disabled class="w-full bg-slate-300 text-slate-500 font-semibold text-xs py-2 px-4 rounded-xl transition-colors cursor-not-allowed">Tandai Sudah Dibaca ✓ (Belum tuntas)</button>
+                        </div>`;
+                    
+                    setTimeout(() => {
+                        mulaiTimerBacaDoc(materi.material_id, 65);
+                    }, 500);
+                }
+
+                container.innerHTML += `
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-4 space-y-3">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                            <h3 class="text-lg font-bold text-slate-800">${materi.judul_materi}</h3>
+                            ${badgeStatusMateri}
+                        </div>
+                        <p class="text-xs font-medium text-slate-500">Diposting: ${tgl}</p>
+                        <p class="text-sm text-slate-600 whitespace-pre-line">${materi.deskripsi || ''}</p>
+                        ${embedHTML}
+                        <div class="pt-3 border-t border-slate-100">
+                            ${actionButton}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- LOGIKA TIMER VIDEO (90 DETIK) ---
+        function mulaiTimerVideo(materialId, durasiTotal) {
+            const btnMulai = document.getElementById(`btn_mulai_tonton_${materialId}`);
+            const btnKonfirmasi = document.getElementById(`btn_materi_${materialId}`);
+            const lblCountdown = document.getElementById(`countdown_${materialId}`);
+            const lblStatus = document.getElementById(`label_timer_${materialId}`);
+            
+            if (btnMulai) btnMulai.style.display = 'none';
+            lblStatus.innerText = "▶ Sedang memutar video... Jangan tutup halaman.";
+
+            let sisaWaktu = durasiTotal;
+            activeTimers[materialId] = setInterval(() => {
+                sisaWaktu--;
+                if (lblCountdown) lblCountdown.innerText = `${sisaWaktu} dtk`;
+
+                if (sisaWaktu <= 0) {
+                    clearInterval(activeTimers[materialId]);
+                    if (lblStatus) lblStatus.innerText = "✔ Waktu tonton terpenuhi!";
+                    if (lblCountdown) lblCountdown.innerText = "Selesai";
+                    if (btnKonfirmasi) {
+                        btnKonfirmasi.disabled = false;
+                        btnKonfirmasi.className = "w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs py-2 px-4 rounded-xl transition-colors shadow-xs cursor-pointer";
+                        btnKonfirmasi.innerText = "Tandai Sudah Ditonton ✓";
+                    }
+                }
+            }, 1000);
+        }
+
+        // --- LOGIKA DOKUMEN: SCROLL SAMPAI BAWAH + WAKTU BACA 65 DETIK ---
+        function cekScrollBawah(materialId) {
+            const box = document.getElementById(`scroll_box_${materialId}`);
+            if (!box) return;
+            
+            const sudahBawah = (box.scrollTop + box.clientHeight >= box.scrollHeight - 15);
+            if (sudahBawah) {
+                statusScrollBawah[materialId] = true;
+                evaluasiTombolDokumen(materialId);
+            }
+        }
+
+        function mulaiTimerBacaDoc(materialId, durasiTotal) {
+            const lblCountdown = document.getElementById(`countdown_baca_${materialId}`);
+            const lblStatus = document.getElementById(`label_baca_${materialId}`);
+            
+            let sisaWaktu = durasiTotal;
+            statusWaktuTuntas[materialId] = false;
+
+            let timer = setInterval(() => {
+                sisaWaktu--;
+                if (lblCountdown) lblCountdown.innerText = `${sisaWaktu} dtk`;
+
+                if (sisaWaktu <= 0) {
+                    clearInterval(timer);
+                    statusWaktuTuntas[materialId] = true;
+                    if (lblStatus) lblStatus.innerText = "📖 Waktu baca tuntas (Pastikan sudah digulir ke bawah)";
+                    if (lblCountdown) lblCountdown.innerText = "OK";
+                    evaluasiTombolDokumen(materialId);
+                }
+            }, 1000);
+        }
+
+        function evaluasiTombolDokumen(materialId) {
+            const btnKonfirmasi = document.getElementById(`btn_materi_${materialId}`);
+            const isScrollOk = statusScrollBawah[materialId] === true;
+            const isTimeOk = statusWaktuTuntas[materialId] === true;
+
+            if (btnKonfirmasi && isScrollOk && isTimeOk) {
+                btnKonfirmasi.disabled = false;
+                btnKonfirmasi.className = "w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs py-2 px-4 rounded-xl transition-colors shadow-xs cursor-pointer";
+                btnKonfirmasi.innerText = "Tandai Sudah Dibaca ✓";
+                const wrapper = document.getElementById(`label_baca_${materialId}`);
+                if (wrapper) wrapper.innerText = "✔ Syarat gulir & waktu baca terpenuhi!";
+            }
+        }
+
+        // --- FUNGSI MENCATAT STATUS BACA MATERI KE BACKEND ---
+        async function tandaiSudahDibaca(materialId) {
+            try {
+                const res = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'mark_material_read', material_id: materialId, student_id: currentUser.user_id }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    muatDataLengkapSiswa(); 
+                } else {
+                    alert(`Gagal: ${result.message}`);
+                }
+            } catch (e) {
+                alert("Terjadi kesalahan jaringan.");
+            }
+        }
+
+        // --- FUNGSI SWITCH TAB ---
         function switchTab(tabName) {
             const btnMateri = document.getElementById('tabBtnMateri');
             const btnTugas = document.getElementById('tabBtnTugas');
@@ -130,87 +371,6 @@
                 btnMateri.className = "flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 cursor-pointer flex items-center justify-center gap-2";
                 secTugas.classList.remove('hidden');
                 secMateri.classList.add('hidden');
-            }
-        }
-
-        // --- MUAT MATERI DENGAN EMBED OTOMATIS (YOUTUBE / DRIVE / PDF) ---
-        async function muatDaftarMateri() {
-            const container = document.getElementById('daftarMateriContainer');
-            try {
-                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_class_materials', class_id: classId }) });
-                const result = await res.json();
-                if (result.status === 'success' && result.data.length > 0) {
-                    container.innerHTML = '';
-                    result.data.forEach(materi => {
-                        const tgl = new Date(materi.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' });
-                        let embedHTML = '';
-
-                        if (materi.file_url) {
-                            let url = materi.file_url;
-                            
-                            // 1. Deteksi Tautan YouTube
-                            if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                                let videoId = '';
-                                if (url.includes('youtu.be/')) {
-                                    videoId = url.split('youtu.be/')[1].split('?')[0];
-                                } else if (url.includes('watch?v=')) {
-                                    videoId = url.split('watch?v=')[1].split('&')[0];
-                                }
-                                if (videoId) {
-                                    embedHTML = `
-                                        <div class="mt-4 relative w-full overflow-hidden rounded-xl shadow-md" style="padding-top: 56.25%;">
-                                            <iframe class="absolute top-0 left-0 w-full h-full border-0 rounded-xl" 
-                                                src="https://www.youtube.com/embed/${videoId}" 
-                                                title="YouTube video player" 
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                                                allowfullscreen>
-                                            </iframe>
-                                        </div>
-                                    `;
-                                }
-                            } 
-                            // 2. Deteksi Google Drive / Dokumen / PDF
-                            else if (url.includes('drive.google.com')) {
-                                let embedUrl = url;
-                                if (url.includes('/view')) {
-                                    embedUrl = url.replace('/view', '/preview');
-                                }
-                                embedHTML = `
-                                    <div class="mt-4 w-full h-64 md:h-96 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shadow-inner">
-                                        <iframe src="${embedUrl}" class="w-full h-full border-0"></iframe>
-                                    </div>
-                                    <div class="mt-2 text-right">
-                                        <a href="${url}" target="_blank" class="text-xs font-semibold text-sky-600 hover:underline inline-flex items-center gap-1">Buka di Tab Baru ↗</a>
-                                    </div>
-                                `;
-                            } 
-                            // 3. Tautan Web Umum Lainnya
-                            else {
-                                embedHTML = `
-                                    <div class="mt-4 w-full h-64 md:h-80 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shadow-inner">
-                                        <iframe src="${url}" class="w-full h-full border-0"></iframe>
-                                    </div>
-                                    <div class="mt-2 text-right">
-                                        <a href="${url}" target="_blank" class="text-xs font-semibold text-sky-600 hover:underline inline-flex items-center gap-1">Buka Tautan Penuh ↗</a>
-                                    </div>
-                                `;
-                            }
-                        }
-
-                        container.innerHTML += `
-                            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-4">
-                                <h3 class="text-lg font-bold text-slate-800 mb-1">${materi.judul_materi}</h3>
-                                <p class="text-xs font-medium text-slate-500 mb-3">Diposting: ${tgl}</p>
-                                <p class="text-sm text-slate-600 mb-3 whitespace-pre-line">${materi.deskripsi || ''}</p>
-                                ${embedHTML}
-                            </div>
-                        `;
-                    });
-                } else {
-                    container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-6 text-center text-slate-500 border border-slate-300 border-dashed font-medium">Belum ada materi pembelajaran di kelas ini.</div>`;
-                }
-            } catch (e) { 
-                container.innerHTML = `<div class="text-rose-500 text-center font-medium">Gagal memuat materi.</div>`; 
             }
         }
 
@@ -232,11 +392,10 @@
             }
         }
 
-        // --- REKOMENDASI 3: FUNGSI FILTER TUGAS ---
+        // --- FUNGSI FILTER TUGAS ---
         function filterTugas(status) {
             currentFilter = status;
             
-            // Atur gaya aktif tombol filter
             document.getElementById('filterSemua').className = status === 'semua' ? "px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs transition-all cursor-pointer font-bold" : "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer";
             document.getElementById('filterBelum').className = status === 'belum' ? "px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs transition-all cursor-pointer font-bold" : "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer";
             document.getElementById('filterSudah').className = status === 'sudah' ? "px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs transition-all cursor-pointer font-bold" : "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer";
@@ -253,7 +412,7 @@
             renderDaftarTugas(filtered);
         }
 
-        // --- RENDER DAFTAR TUGAS DENGAN KOMPONEN PROFESIONAL ---
+        // --- RENDER DAFTAR TUGAS ---
         function renderDaftarTugas(dataTugas) {
             const container = document.getElementById('daftarTugasContainer');
             
@@ -272,7 +431,6 @@
                 const tglFormat = deadlineDate.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
                 const bgStatus = isSubmitted ? "bg-emerald-50/50 border-emerald-200" : (isExpired ? "bg-rose-50/50 border-rose-200" : "bg-white border-slate-200");
                 
-                // REKOMENDASI 4: Tombol Akses Cepat ke Lampiran Tugas Guru
                 let lampiranTugasGuru = tugas.file_url ? `
                     <div class="mt-3 p-3 bg-sky-50/80 rounded-xl border border-sky-200/80 flex items-center justify-between">
                         <div class="flex items-center gap-2">
@@ -282,7 +440,6 @@
                         <a href="${tugas.file_url}" target="_blank" class="text-xs font-bold text-white bg-sky-500 hover:bg-sky-600 px-3 py-1.5 rounded-lg shadow-xs transition-colors">Buka Berkas ↗</a>
                     </div>` : '';
                 
-                // REKOMENDASI 2 & UMPAN BALIK: Tampilan Nilai & Catatan/Feedback dari Guru
                 let feedbackSection = '';
                 if (isSubmitted && tugas.feedback && tugas.feedback.trim() !== '') {
                     feedbackSection = `

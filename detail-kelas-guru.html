@@ -229,6 +229,7 @@
         // GANTI DENGAN URL WEB APP ANDA
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
         let currentUser = null;
+        let globalStudents = [];
         const urlParams = new URLSearchParams(window.location.search);
         const classId = urlParams.get('id');
         const namaKelas = urlParams.get('nama') || "Detail Kelas";
@@ -240,9 +241,23 @@
             document.getElementById('namaKelasTitle').innerText = namaKelas;
             document.getElementById('btnRekapTugas').href = `rekap-tugas-guru.html?id=${classId}&nama=${encodeURIComponent(namaKelas)}`;
             
+            muatDataSiswaKelas();
             muatDaftarMateri(); 
             muatDaftarTugas();
         };
+
+        // --- AMBIL DATA SISWA KELAS UNTUK REKAP MATERI ---
+        async function muatDataSiswaKelas() {
+            try {
+                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_class_progress', class_id: classId }) });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    globalStudents = result.data.progress || [];
+                }
+            } catch (e) {
+                globalStudents = [];
+            }
+        }
 
         // --- MANAJEMEN UI FORM ---
         function toggleFormType() {
@@ -289,9 +304,7 @@
                 const assignments = dataAsg.data || [];
                 if (assignments.length === 0) { alert("Belum ada tugas yang diposting di kelas ini."); return; }
 
-                const resProg = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_class_progress', class_id: classId }) });
-                const dataProg = await resProg.json();
-                const students = dataProg.data.progress || [];
+                const students = globalStudents;
                 if (students.length === 0) { alert("Tidak ada siswa yang tergabung di kelas ini."); return; }
 
                 let submissionsMap = {}; 
@@ -342,27 +355,19 @@
             infoJumlah.innerText = 'Menyinkronkan data...';
 
             try {
-                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_class_progress', class_id: classId }) });
-                const result = await res.json();
+                const students = globalStudents;
+                infoJumlah.innerText = `Total: ${students.length} Siswa Terdaftar`;
                 
-                if (result.status === 'success') {
-                    const students = result.data.progress;
-                    infoJumlah.innerText = `Total: ${students.length} Siswa Terdaftar`;
-                    
-                    if (students.length > 0) {
-                        container.innerHTML = '';
-                        students.forEach((siswa, index) => {
-                            container.innerHTML += `
-                                <div class="bg-white border border-slate-200 px-4 py-3 rounded-lg flex items-center gap-4 hover:border-emerald-300 transition-colors shadow-sm">
-                                    <div class="bg-emerald-100 text-emerald-600 font-bold rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 text-sm">${index + 1}</div>
-                                    <div class="text-slate-700 font-semibold text-sm">${siswa.student_name}</div>
-                                </div>`;
-                        });
-                    } else { container.innerHTML = '<div class="text-center border border-slate-300 border-dashed rounded-lg p-6 text-slate-500">Belum ada siswa yang bergabung di kelas ini.</div>'; }
-                } else {
-                    container.innerHTML = `<div class="text-center text-rose-500 py-4">Gagal memuat: ${result.message}</div>`;
-                    infoJumlah.innerText = 'Gagal memuat data';
-                }
+                if (students.length > 0) {
+                    container.innerHTML = '';
+                    students.forEach((siswa, index) => {
+                        container.innerHTML += `
+                            <div class="bg-white border border-slate-200 px-4 py-3 rounded-lg flex items-center gap-4 hover:border-emerald-300 transition-colors shadow-sm">
+                                <div class="bg-emerald-100 text-emerald-600 font-bold rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 text-sm">${index + 1}</div>
+                                <div class="text-slate-700 font-semibold text-sm">${siswa.student_name}</div>
+                            </div>`;
+                    });
+                } else { container.innerHTML = '<div class="text-center border border-slate-300 border-dashed rounded-lg p-6 text-slate-500">Belum ada siswa yang bergabung di kelas ini.</div>'; }
             } catch (error) {
                 container.innerHTML = '<div class="text-center text-rose-500 py-4">Terjadi kesalahan jaringan.</div>';
                 infoJumlah.innerText = 'Gagal memuat data';
@@ -428,12 +433,18 @@
             finally { btn.disabled = false; btn.innerHTML = 'Transfer'; }
         }
 
-        // --- MUAT KARTU MATERI & TUGAS ---
+        // --- MUAT KARTU MATERI DENGAN REKAP PEMBACA ---
         async function muatDaftarMateri() {
             const container = document.getElementById('daftarMateriContainer');
             try {
                 const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_class_materials', class_id: classId }) });
                 const result = await res.json();
+                
+                // Ambil juga data rekap pembaca materi
+                const resReads = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_material_reads' }) });
+                const resultReads = await resReads.json();
+                const readsData = (resultReads.status === 'success') ? (resultReads.data || []) : [];
+
                 if (result.status === 'success' && result.data.length > 0) {
                     container.innerHTML = '';
                     result.data.forEach(materi => {
@@ -445,23 +456,60 @@
                             ? `<span class="bg-slate-100 text-slate-600 font-medium text-xs px-2 py-1 rounded border border-slate-300 mt-2 inline-block">🙈 Disembunyikan</span>` 
                             : `<span class="bg-emerald-50 text-emerald-600 font-medium text-xs px-2 py-1 rounded border border-emerald-200 mt-2 inline-block">👁️ Tampil</span>`;
 
+                        // Hitung statistik pembaca
+                        const readersForThisMaterial = readsData.filter(r => r.material_id === materi.material_id).map(r => r.student_id);
+                        const totalSiswa = globalStudents.length;
+                        const totalSudahBaca = globalStudents.filter(s => readersForThisMaterial.includes(s.student_id)).length;
+                        const persenBaca = totalSiswa > 0 ? Math.round((totalSudahBaca / totalSiswa) * 100) : 0;
+
+                        // List nama siswa yang sudah & belum membaca
+                        let listSudah = globalStudents.filter(s => readersForThisMaterial.includes(s.student_id));
+                        let listBelum = globalStudents.filter(s => !readersForThisMaterial.includes(s.student_id));
+
+                        let dropdownReadHTML = `
+                            <div class="mt-4 pt-3 border-t border-slate-100 bg-slate-50/70 p-3 rounded-xl">
+                                <div class="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
+                                    <span>📊 Statistik Akses Materi:</span>
+                                    <span class="text-emerald-600">${totalSudahBaca} dari ${totalSiswa} Siswa (${persenBaca}%)</span>
+                                </div>
+                                <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mb-2">
+                                    <div class="bg-emerald-500 h-full rounded-full transition-all" style="width: ${persenBaca}%"></div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 text-xs">
+                                    <div class="bg-emerald-50/80 border border-emerald-200 p-2 rounded-lg">
+                                        <strong class="text-emerald-800 block mb-1">✔ Sudah Dibaca (${listSudah.length}):</strong>
+                                        <span class="text-slate-600">${listSudah.length > 0 ? listSudah.map(s => s.student_name).join(', ') : 'Belum ada'}</span>
+                                    </div>
+                                    <div class="bg-amber-50/80 border border-amber-200 p-2 rounded-lg">
+                                        <strong class="text-amber-800 block mb-1">⏳ Belum Dibaca (${listBelum.length}):</strong>
+                                        <span class="text-slate-600">${listBelum.length > 0 ? listBelum.map(s => s.student_name).join(', ') : 'Semua sudah membaca!'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
                         const safeJudul = materi.judul_materi.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         const safeDeskripsi = materi.deskripsi.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         const safeUrl = materi.file_url || '';
 
                         container.innerHTML += `
-                            <div class="bg-white border border-slate-200 shadow-sm p-5 rounded-xl flex flex-col md:flex-row justify-between items-start gap-4 ${isHidden ? 'opacity-70 grayscale-[20%]' : ''}">
-                                <div class="flex-1">
-                                    <h3 class="text-lg font-bold text-slate-800">${materi.judul_materi}</h3>
-                                    <p class="text-xs font-medium text-slate-500 mb-2">Diposting: ${tgl}</p>
+                            <div class="bg-white border border-slate-200 shadow-sm p-5 rounded-xl flex flex-col justify-between gap-4 ${isHidden ? 'opacity-70 grayscale-[20%]' : ''}">
+                                <div>
+                                    <div class="flex flex-col md:flex-row justify-between items-start gap-2">
+                                        <div>
+                                            <h3 class="text-lg font-bold text-slate-800">${materi.judul_materi}</h3>
+                                            <p class="text-xs font-medium text-slate-500 mb-2">Diposting: ${tgl}</p>
+                                        </div>
+                                        <div class="flex gap-2 flex-wrap">
+                                            <button onclick="bukaModalTransfer('materi', '${safeJudul}', '${safeDeskripsi}', '${safeUrl}', '')" class="bg-sky-50 hover:bg-sky-100 text-sky-600 border border-sky-200 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors">Transfer</button>
+                                            <button onclick="bukaModalEditMateri('${materi.material_id}', '${safeJudul}', '${safeDeskripsi}', '${safeUrl}', '${materi.status_materi || 'tampil'}')" class="bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors">Edit</button>
+                                            <button onclick="hapusMateri('${materi.material_id}')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors">Hapus</button>
+                                        </div>
+                                    </div>
                                     <p class="text-sm text-slate-600">${materi.deskripsi}</p>
                                     ${badgeStatus} <br> ${linkHTML}
                                 </div>
-                                <div class="flex gap-2 flex-wrap mt-2 md:mt-0">
-                                    <button onclick="bukaModalTransfer('materi', '${safeJudul}', '${safeDeskripsi}', '${safeUrl}', '')" class="bg-sky-50 hover:bg-sky-100 text-sky-600 border border-sky-200 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors">Transfer</button>
-                                    <button onclick="bukaModalEditMateri('${materi.material_id}', '${safeJudul}', '${safeDeskripsi}', '${safeUrl}', '${materi.status_materi || 'tampil'}')" class="bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors">Edit</button>
-                                    <button onclick="hapusMateri('${materi.material_id}')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors">Hapus</button>
-                                </div>
+                                ${dropdownReadHTML}
                             </div>`;
                     });
                 } else container.innerHTML = `<div class="text-center p-6 text-slate-500 border border-dashed border-slate-300 rounded-xl bg-slate-50">Belum ada materi.</div>`;
