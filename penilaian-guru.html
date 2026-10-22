@@ -232,6 +232,8 @@
                     let badgeFlagHTML = '';
                     if (flagStatus === "Terdeteksi Instan") {
                         badgeFlagHTML = `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 mt-1">⚠️ Terdeteksi Cepat (${durasi} dtk)</span>`;
+                    } else if (flagStatus === "Indikasi AI / Salin") {
+                        badgeFlagHTML = `<span class="bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 mt-1">🤖 Indikasi AI / Salin (${durasi} dtk)</span>`;
                     } else {
                         badgeFlagHTML = `<span class="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 mt-1">✅ Normal (${durasi} dtk)</span>`;
                     }
@@ -282,7 +284,10 @@
             const flagInfoBox = document.getElementById('modalFlagInfo');
             if (flagStatus === "Terdeteksi Instan") {
                 flagInfoBox.className = "p-3 rounded-xl border bg-amber-50 border-amber-200 text-amber-900";
-                flagInfoBox.innerHTML = `⚠️ <strong>Peringatan Sistem:</strong> Siswa mengetik esai ini dalam waktu <strong>${durasi} detik</strong> (di bawah ambang batas 60 detik). Berpotensi hasil salin-tempel/AI luar. Mohon tinjau secara teliti.`;
+                flagInfoBox.innerHTML = `⚠️ <strong>Peringatan Sistem:</strong> Siswa mengetik esai ini dalam waktu <strong>${durasi} detik</strong> (di bawah ambang batas). Berpotensi hasil cepat / salin-tempel. Mohon tinjau secara teliti.`;
+            } else if (flagStatus === "Indikasi AI / Salin") {
+                flagInfoBox.className = "p-3 rounded-xl border bg-rose-50 border-rose-200 text-rose-900";
+                flagInfoBox.innerHTML = `🤖 <strong>Peringatan AI Detector:</strong> Pola struktur teks terdeteksi mirip hasil AI atau salinan luar (Durasi: <strong>${durasi} detik</strong>).`;
             } else {
                 flagInfoBox.className = "p-3 rounded-xl border bg-emerald-50 border-emerald-200 text-emerald-900";
                 flagInfoBox.innerHTML = `✅ <strong>Validasi Sistem:</strong> Pola pengetikan mandiri normal dengan durasi pengerjaan <strong>${durasi} detik</strong>.`;

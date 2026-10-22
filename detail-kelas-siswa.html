@@ -569,7 +569,7 @@
                 const tglFormat = deadlineDate.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
                 const bgStatus = isSubmitted ? "bg-emerald-50/50 border-emerald-200" : (isExpired ? "bg-rose-50/50 border-rose-200" : "bg-white border-slate-200");
                 
-                let lampiranTugasGuru = tugas.file_url ? `
+                let lampiranTugasGuru = tugas.file_url && tugas.file_url !== 'Jawaban Esai Langsung (LMS)' ? `
                     <div class="mt-3 p-3 bg-sky-50/80 rounded-xl border border-sky-200/80 flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <span class="text-sky-600">📎</span>
@@ -588,17 +588,26 @@
                     `;
                 }
 
+                // --- INTEGRASI BADGE AI DETECTOR & DURASI ---
                 let flagBadge = "";
                 if (isSubmitted && tugas.submitted_text && tugas.submitted_text !== 'Jawaban Esai Langsung (LMS)') {
-                    if (tugas.flag_status === "Terdeteksi Instan") {
+                    const flag = tugas.flag_status || 'Normal';
+                    const durasi = tugas.durasi_detik || 0;
+
+                    if (flag === "Terdeteksi Instan") {
                         flagBadge = `
                             <div class="mt-2.5 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-center gap-2">
-                                <span>⚠️ <strong>Catatan Sistem:</strong> Pengerjaan terdeteksi sangat cepat (${tugas.durasi_detik || 0} detik). Ditandai untuk peninjauan guru.</span>
+                                <span>⚠️ <strong>Catatan Sistem:</strong> Pengerjaan sangat cepat (${durasi} detik).</span>
+                            </div>`;
+                    } else if (flag === "Indikasi AI / Salin") {
+                        flagBadge = `
+                            <div class="mt-2.5 p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 flex items-center gap-2">
+                                <span>🤖 <strong>Peringatan AI Detector:</strong> Pola struktur teks terdeteksi mirip hasil AI / salinan luar (${durasi} detik).</span>
                             </div>`;
                     } else {
                         flagBadge = `
                             <div class="mt-2.5 p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-center gap-2">
-                                <span>✅ <strong>Validasi Sistem:</strong> Pola pengetikan mandiri normal (${tugas.durasi_detik || 0} detik).</span>
+                                <span>✅ <strong>Validasi Sistem:</strong> Pengetikan mandiri normal (${durasi} detik).</span>
                             </div>`;
                     }
                 }
@@ -629,12 +638,12 @@
                         <form id="form_${tugas.assignment_id}" class="mt-4 pt-4 border-t border-slate-200 ${isSubmitted ? 'hidden' : ''}" onsubmit="kirimTugas(event, '${tugas.assignment_id}', '${tugas.tenggat_waktu}')">
                             <label class="block text-sm font-semibold text-slate-700 mb-1">Metode Pengerjaan</label>
                             <select id="metode_${tugas.assignment_id}" onchange="toggleMetode('${tugas.assignment_id}')" class="w-full rounded-lg text-sm px-4 py-2 modern-input mb-3">
-                                <option value="esai">✍️ Tulis Esai Langsung di LMS</option>
+                                <option value="esai">✍️ Tulis Esai Langsung di LMS (Proteksi AI & Anti Paste)</option>
                                 <option value="link">🔗 Kirim Tautan (Link Drive / Web)</option>
                                 <option value="file">📁 Upload File (PDF / Gambar / Doc)</option>
                             </select>
                             
-                            <!-- Lembar Esai Aman (Secure Essay & Anti Copy-Paste Aktif Kembali) -->
+                            <!-- Lembar Esai Aman (Secure Essay & Anti Copy-Paste Aktif) -->
                             <div id="div_esai_${tugas.assignment_id}" class="mb-4">
                                 <label class="block text-xs font-bold text-slate-600 mb-1">Lembar Jawaban Esai (Pengetikan Mandiri):</label>
                                 <textarea id="text_esai_${tugas.assignment_id}" rows="6" 
@@ -646,7 +655,7 @@
                                     onkeydown="cekShortcutEsai(event)"
                                     class="w-full rounded-xl p-3 modern-input text-sm secure-essay" 
                                     placeholder="Ketik jawaban esai Anda langsung di sini... (Fitur Salin & Tempel dinonaktifkan)"></textarea>
-                                <div class="text-[11px] text-amber-600 font-medium mt-1">🔒 Kebijakan Integritas: Anda wajib mengetik jawaban secara mandiri (Di bawah 60 detik akan ditinjau sistem).</div>
+                                <div class="text-[11px] text-amber-600 font-medium mt-1">🔒 Proteksi Aktif: Copy-Paste dinonaktifkan & teks dianalisis oleh AI Detector sistem.</div>
                             </div>
 
                             <div id="div_link_${tugas.assignment_id}" class="hidden mb-4">
