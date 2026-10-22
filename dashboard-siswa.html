@@ -133,7 +133,7 @@
         </div>
     </div>
 
-    <!-- Modal Popup Wajib Isi Nomor WhatsApp & Email (Catch-up Siswa Lama) -->
+    <!-- Modal Popup Wajib Isi Nomor WhatsApp (Catch-up Siswa Lama) -->
     <div id="modalLengkapiProfil" class="fixed inset-0 z-[100] hidden bg-slate-900/85 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div class="text-center">
@@ -245,7 +245,7 @@
                         action: 'update_profile',
                         user_id: currentUser.user_id,
                         email_baru: currentUser.email,
-                        password_baru: "", // Biarkan kosong agar password tidak berubah
+                        password_baru: "", 
                         no_wa: waBaru
                     }),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }
@@ -254,14 +254,18 @@
                 const result = await response.json();
 
                 if (result.status === 'success') {
-                    // Update localStorage
-                    currentUser = result.data;
+                    // ⭐ PERBAIKAN UTAMA: Update localStorage dengan data terbaru dari server
+                    if (result.data) {
+                        currentUser = result.data;
+                    } else {
+                        currentUser.no_wa = waBaru;
+                    }
                     localStorage.setItem('lms_user', JSON.stringify(currentUser));
 
-                    // Perbarui tampilan profil
+                    // Perbarui tampilan profil di dasbor
                     document.getElementById('profilWa').innerText = currentUser.no_wa;
 
-                    // Tutup modal
+                    // Sembunyikan modal catch-up
                     document.getElementById('modalLengkapiProfil').classList.remove('flex');
                     document.getElementById('modalLengkapiProfil').classList.add('hidden');
                 } else {
