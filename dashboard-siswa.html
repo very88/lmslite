@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Siswa - LMS</title>
+    <title>Dashboard Siswa - LMS SMANJO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { 
@@ -13,7 +13,6 @@
             min-height: 100vh; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
-        /* Glass panel versi Light Mode yang bersih dan profesional */
         .glass-panel { 
             background: rgba(255, 255, 255, 0.85); 
             backdrop-filter: blur(12px); 
@@ -21,7 +20,6 @@
             border: 1px solid rgba(226, 232, 240, 0.8); 
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); 
         }
-        /* Input Styling modern */
         .modern-input {
             background-color: #ffffff;
             border: 1px solid #cbd5e1;
@@ -44,7 +42,7 @@
 
     <!-- Navbar -->
     <nav class="glass-panel rounded-2xl p-4 mb-8 flex justify-between items-center">
-        <div class="text-xl font-bold text-sky-600">LMS Workspace</div>
+        <div class="text-xl font-bold text-sky-600">LMS SMANJO</div>
         <div class="flex items-center gap-4">
             <div class="text-sm text-slate-500 font-medium">Halo, <span id="namaSiswa" class="font-bold text-slate-800">Siswa</span></div>
             <button onclick="logout()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer">Keluar</button>
@@ -100,6 +98,10 @@
                         <span id="profilEmail" class="text-sky-600 font-medium break-all">-</span>
                     </div>
                     <div>
+                        <span class="block text-xs font-semibold text-slate-500">Nomor WhatsApp:</span>
+                        <span id="profilWa" class="text-emerald-600 font-medium">-</span>
+                    </div>
+                    <div>
                         <span class="block text-xs font-semibold text-slate-500">ID Pengguna:</span>
                         <span id="profilId" class="font-mono text-slate-500 text-xs bg-slate-100 px-2 py-1 rounded inline-block mt-1">-</span>
                     </div>
@@ -131,6 +133,26 @@
         </div>
     </div>
 
+    <!-- Modal Popup Wajib Isi Nomor WhatsApp & Email (Catch-up Siswa Lama) -->
+    <div id="modalLengkapiProfil" class="fixed inset-0 z-[100] hidden bg-slate-900/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">📱</div>
+                <h3 class="text-xl font-bold text-slate-800">Lengkapi Nomor WhatsApp</h3>
+                <p class="text-sm text-slate-500 mt-2">Sistem LMS SMANJO kini mengirim notifikasi nilai dan tugas baru langsung via **WhatsApp**. Masukkan nomor aktif Anda untuk melanjutkan.</p>
+            </div>
+            
+            <form id="formCatchupProfil" onsubmit="simpanCatchupProfil(event)" class="space-y-4 mt-2">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nomor WhatsApp Aktif:</label>
+                    <input type="tel" id="catchup_wa" required class="w-full rounded-xl p-3 modern-input text-sm" placeholder="Contoh: 081234567890">
+                    <p class="text-[10px] text-slate-400 mt-1">* Pastikan nomor dapat dihubungi via WhatsApp.</p>
+                </div>
+                <button type="submit" id="btnSimpanCatchup" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition-colors shadow-md cursor-pointer">Simpan & Lanjutkan Masuk</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Edit Profil -->
     <div id="modalEditProfil" class="fixed inset-0 z-50 hidden bg-slate-800/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl p-6 w-full max-w-md border border-slate-200 shadow-xl">
@@ -140,11 +162,14 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Email Baru</label>
                     <input type="email" id="edit_email" required class="w-full rounded-lg px-4 py-2 modern-input-amber">
                 </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Nomor WhatsApp Baru</label>
+                    <input type="tel" id="edit_wa" required class="w-full rounded-lg px-4 py-2 modern-input-amber" placeholder="Contoh: 081234567890">
+                </div>
                 <div class="mb-6">
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Password Baru <span class="text-xs font-normal text-slate-500">(Kosongkan jika tetap)</span></label>
                     <div class="relative">
                         <input type="password" id="edit_password" class="w-full rounded-lg px-4 py-2 pr-10 modern-input-amber" placeholder="••••••••">
-                        <!-- Toggle Password Button (Flat & Minimalis) -->
                         <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-slate-700 transition-colors focus:outline-none cursor-pointer">
                             <svg id="iconMata" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -184,9 +209,16 @@
                 return;
             }
 
+            // --- CEK APAKAH NOMOR WA SISWA KOSONG ---
+            if (!currentUser.no_wa || currentUser.no_wa.trim() === "" || currentUser.no_wa === "undefined") {
+                document.getElementById('modalLengkapiProfil').classList.remove('hidden');
+                document.getElementById('modalLengkapiProfil').classList.add('flex');
+            }
+
             document.getElementById('namaSiswa').innerText = currentUser.nama_lengkap || 'Siswa';
             document.getElementById('profilNama').innerText = currentUser.nama_lengkap || '-';
             document.getElementById('profilEmail').innerText = currentUser.email || '-';
+            document.getElementById('profilWa').innerText = currentUser.no_wa || 'Belum diisi';
             document.getElementById('profilId').innerText = currentUser.user_id || '-';
 
             muatKelasSiswa();
@@ -195,6 +227,52 @@
         function logout() {
             localStorage.removeItem('lms_user');
             window.location.href = 'index.html';
+        }
+
+        // --- FUNGSI SIMPAN POPUP CATCH-UP WHATSAPP ---
+        async function simpanCatchupProfil(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSimpanCatchup');
+            const waBaru = document.getElementById('catchup_wa').value.trim();
+
+            btn.disabled = true;
+            btn.innerText = "Menyimpan...";
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'update_profile',
+                        user_id: currentUser.user_id,
+                        email_baru: currentUser.email,
+                        password_baru: "", // Biarkan kosong agar password tidak berubah
+                        no_wa: waBaru
+                    }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    // Update localStorage
+                    currentUser = result.data;
+                    localStorage.setItem('lms_user', JSON.stringify(currentUser));
+
+                    // Perbarui tampilan profil
+                    document.getElementById('profilWa').innerText = currentUser.no_wa;
+
+                    // Tutup modal
+                    document.getElementById('modalLengkapiProfil').classList.remove('flex');
+                    document.getElementById('modalLengkapiProfil').classList.add('hidden');
+                } else {
+                    alert("Gagal menyimpan: " + result.message);
+                }
+            } catch (error) {
+                alert("Kesalahan jaringan, coba lagi.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Simpan & Lanjutkan Masuk";
+            }
         }
 
         // --- TOGGLE PASSWORD VISIBILITY ---
@@ -218,6 +296,7 @@
 
         function bukaModalEditProfil() {
             document.getElementById('edit_email').value = currentUser.email || '';
+            document.getElementById('edit_wa').value = currentUser.no_wa || '';
             document.getElementById('edit_password').value = ''; 
             document.getElementById('edit_password').type = 'password';
             document.getElementById('modalEditProfil').classList.remove('hidden');
@@ -233,7 +312,8 @@
                 action: 'update_profile',
                 user_id: currentUser.user_id,
                 email_baru: document.getElementById('edit_email').value,
-                password_baru: document.getElementById('edit_password').value
+                password_baru: document.getElementById('edit_password').value,
+                no_wa: document.getElementById('edit_wa').value
             };
 
             try {
@@ -252,6 +332,7 @@
                     document.getElementById('namaSiswa').innerText = currentUser.nama_lengkap;
                     document.getElementById('profilNama').innerText = currentUser.nama_lengkap;
                     document.getElementById('profilEmail').innerText = currentUser.email;
+                    document.getElementById('profilWa').innerText = currentUser.no_wa || '-';
 
                     document.getElementById('modalEditProfil').classList.add('hidden');
                 } else {
@@ -285,7 +366,6 @@
                     let tugasAktifCount = 0;
                     let selesaiCount = 0;
 
-                    // Daftar pilihan gradien warna elegan untuk header kartu kelas
                     const gradients = [
                         'from-sky-500 to-indigo-600',
                         'from-teal-500 to-emerald-600',
@@ -302,7 +382,6 @@
                             selesaiCount++;
                         }
 
-                        // Pilih gradien berurutan berdasarkan index kelas
                         const gradClass = gradients[index % gradients.length];
                         
                         let badgeNotif = kelas.has_new_task 
@@ -311,13 +390,10 @@
 
                         container.innerHTML += `
                             <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-sky-300 hover:shadow-lg transition-all shadow-sm flex flex-col justify-between group">
-                                <!-- Banner Gradien Atas Kartu -->
                                 <div class="h-16 bg-gradient-to-r ${gradClass} p-4 flex justify-between items-start">
                                     <span class="text-xs font-bold text-white/90 bg-black/10 backdrop-blur-md px-2.5 py-1 rounded-lg">Kelas LMS</span>
                                     ${badgeNotif}
                                 </div>
-                                
-                                <!-- Isi Konten Kartu -->
                                 <div class="p-5 -mt-4 bg-white rounded-t-2xl flex-1 flex flex-col justify-between">
                                     <div>
                                         <h3 class="text-lg font-bold text-slate-800 mb-2 group-hover:text-sky-600 transition-colors">${kelas.nama_kelas}</h3>
@@ -334,7 +410,6 @@
                         `;
                     });
 
-                    // Update Nilai pada Kartu Statistik
                     document.getElementById('statTotalKelas').innerText = totalKelas;
                     document.getElementById('statTugasAktif').innerText = tugasAktifCount;
                     document.getElementById('statTugasSelesai').innerText = selesaiCount;
