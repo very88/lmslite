@@ -49,7 +49,7 @@
         </div>
     </nav>
 
-    <!-- Overview Metrics (Kartu Ringkasan Statistik) -->
+    <!-- Overview Metrics -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="glass-panel rounded-2xl p-5 flex items-center gap-4 shadow-sm border border-slate-200">
             <div class="bg-sky-100 p-3.5 rounded-xl text-sky-600">
@@ -85,7 +85,6 @@
         
         <!-- Panel Kiri: Profil & Form Gabung Kelas -->
         <div class="space-y-6 md:col-span-1">
-            <!-- Card Profil Siswa -->
             <div class="glass-panel rounded-2xl p-6">
                 <h2 class="text-lg font-bold mb-4 text-slate-800 flex items-center gap-2 border-b border-slate-200 pb-2">👤 Profil Akun</h2>
                 <div class="space-y-3 text-sm text-slate-600 mb-5">
@@ -111,7 +110,6 @@
                 </button>
             </div>
 
-            <!-- Card Gabung Kelas -->
             <div class="glass-panel rounded-2xl p-6">
                 <h2 class="text-xl font-bold mb-4 text-slate-800 flex items-center gap-2 border-b border-slate-200 pb-2">Gabung Kelas Baru</h2>
                 <form id="formGabungKelas" onsubmit="gabungKelas(event)">
@@ -124,16 +122,19 @@
             </div>
         </div>
 
-        <!-- Panel Kanan: Daftar Kelas yang Diikuti -->
+        <!-- Panel Kanan: Daftar Kelas -->
         <div class="glass-panel rounded-2xl p-6 md:col-span-2 h-fit">
             <h2 class="text-xl font-bold mb-4 text-slate-800 border-b border-slate-200 pb-2">Kelas Saya</h2>
             <div id="daftarKelasContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div class="text-slate-500 col-span-2 text-center py-8 font-medium">Memuat kelas...</div>
+                <div class="text-slate-500 col-span-2 text-center py-8 font-medium flex items-center justify-center gap-2">
+                    <svg class="animate-spin h-5 w-5 text-sky-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Memuat daftar kelas...
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Popup Wajib Isi Nomor WhatsApp (Catch-up Siswa Lama) -->
+    <!-- Modal Popup Wajib Isi Nomor WhatsApp -->
     <div id="modalLengkapiProfil" class="fixed inset-0 z-[100] hidden bg-slate-900/85 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div class="text-center">
@@ -187,13 +188,15 @@
     </div>
 
     <script>
-        // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
         let currentUser = null;
 
         window.onload = function() {
             const sessionData = localStorage.getItem('lms_user');
-            if (!sessionData) { window.location.href = 'index.html'; return; }
+            if (!sessionData) { 
+                window.location.href = 'index.html'; 
+                return; 
+            }
             
             try {
                 currentUser = JSON.parse(sessionData);
@@ -203,14 +206,20 @@
                 return;
             }
 
-            if (!currentUser || currentUser.role !== 'Siswa') {
-                alert("Akses ditolak! Halaman ini khusus untuk Siswa.");
+            if (!currentUser || !currentUser.user_id || currentUser.role !== 'Siswa') {
+                alert("Sesi kedaluwarsa atau akses ditolak. Silakan login kembali.");
+                localStorage.removeItem('lms_user');
                 window.location.href = 'index.html'; 
                 return;
             }
 
+            // ⭐ Amankan properti no_wa agar tidak undefined/null
+            if (!currentUser.no_wa) {
+                currentUser.no_wa = "";
+            }
+
             // --- CEK APAKAH NOMOR WA SISWA KOSONG ---
-            if (!currentUser.no_wa || currentUser.no_wa.trim() === "" || currentUser.no_wa === "undefined") {
+            if (currentUser.no_wa.trim() === "" || currentUser.no_wa === "undefined") {
                 document.getElementById('modalLengkapiProfil').classList.remove('hidden');
                 document.getElementById('modalLengkapiProfil').classList.add('flex');
             }
@@ -229,7 +238,6 @@
             window.location.href = 'index.html';
         }
 
-        // --- FUNGSI SIMPAN POPUP CATCH-UP WHATSAPP ---
         async function simpanCatchupProfil(event) {
             event.preventDefault();
             const btn = document.getElementById('btnSimpanCatchup');
@@ -254,7 +262,6 @@
                 const result = await response.json();
 
                 if (result.status === 'success') {
-                    // ⭐ PERBAIKAN UTAMA: Update localStorage dengan data terbaru dari server
                     if (result.data) {
                         currentUser = result.data;
                     } else {
@@ -262,10 +269,8 @@
                     }
                     localStorage.setItem('lms_user', JSON.stringify(currentUser));
 
-                    // Perbarui tampilan profil di dasbor
                     document.getElementById('profilWa').innerText = currentUser.no_wa;
 
-                    // Sembunyikan modal catch-up
                     document.getElementById('modalLengkapiProfil').classList.remove('flex');
                     document.getElementById('modalLengkapiProfil').classList.add('hidden');
                 } else {
@@ -279,22 +284,16 @@
             }
         }
 
-        // --- TOGGLE PASSWORD VISIBILITY ---
         function togglePasswordVisibility() {
             const inputPass = document.getElementById('edit_password');
             const iconMata = document.getElementById('iconMata');
             
             if (inputPass.type === 'password') {
                 inputPass.type = 'text';
-                iconMata.innerHTML = `
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                `;
+                iconMata.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />`;
             } else {
                 inputPass.type = 'password';
-                iconMata.innerHTML = `
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                `;
+                iconMata.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />`;
             }
         }
 
@@ -354,40 +353,33 @@
             const container = document.getElementById('daftarKelasContainer');
             if (!container) return;
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
+
             try {
                 const response = await fetch(scriptURL, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'get_student_classes', student_id: currentUser.user_id }),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    signal: controller.signal
                 });
                 
+                clearTimeout(timeoutId);
                 const result = await response.json();
                 
                 if (result.status === 'success' && result.data && result.data.length > 0) {
                     container.innerHTML = '';
-                    
-                    let totalKelas = result.data.length;
-                    let tugasAktifCount = 0;
-                    let selesaiCount = 0;
+                    let totalKelas = result.data.length, tugasAktifCount = 0, selesaiCount = 0;
 
                     const gradients = [
-                        'from-sky-500 to-indigo-600',
-                        'from-teal-500 to-emerald-600',
-                        'from-violet-500 to-purple-600',
-                        'from-amber-500 to-orange-600',
-                        'from-pink-500 to-rose-600',
-                        'from-blue-600 to-cyan-500'
+                        'from-sky-500 to-indigo-600', 'from-teal-500 to-emerald-600',
+                        'from-violet-500 to-purple-600', 'from-amber-500 to-orange-600',
+                        'from-pink-500 to-rose-600', 'from-blue-600 to-cyan-500'
                     ];
 
                     result.data.forEach((kelas, index) => {
-                        if (kelas.has_new_task) {
-                            tugasAktifCount++;
-                        } else {
-                            selesaiCount++;
-                        }
-
+                        if (kelas.has_new_task) tugasAktifCount++; else selesaiCount++;
                         const gradClass = gradients[index % gradients.length];
-                        
                         let badgeNotif = kelas.has_new_task 
                             ? `<span class="bg-rose-50 border border-rose-200 text-rose-600 font-semibold text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-xs"><span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> Tugas Baru</span>` 
                             : `<span class="bg-emerald-50 border border-emerald-200 text-emerald-600 font-semibold text-xs px-2.5 py-1 rounded-full">Semua Selesai</span>`;
@@ -429,10 +421,12 @@
                     document.getElementById('statTugasSelesai').innerText = 0;
                 }
             } catch (error) {
+                let pesanError = "Gagal memuat daftar kelas.";
+                if (error.name === 'AbortError') pesanError = "Koneksi ke server terlalu lama (Timeout).";
                 container.innerHTML = `
-                    <div class="text-rose-500 col-span-2 text-center font-medium py-4">
-                        Gagal memuat daftar kelas. 
-                        <button onclick="muatKelasSiswa()" class="underline font-bold ml-1 cursor-pointer">Coba Lagi</button>
+                    <div class="bg-rose-50 border border-rose-200 rounded-xl text-rose-600 col-span-2 text-center font-medium p-6 flex flex-col items-center justify-center gap-2">
+                        <span>⚠️ ${pesanError}</span>
+                        <button onclick="muatKelasSiswa()" class="bg-rose-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-700 transition-colors shadow-sm cursor-pointer mt-1">Coba Lagi</button>
                     </div>`;
             }
         }
@@ -442,15 +436,10 @@
             const btnSubmit = document.getElementById('btnSubmitGabung');
             btnSubmit.disabled = true; btnSubmit.innerHTML = 'Memproses...';
 
-            const payloadData = {
-                action: 'join_class',
-                kode_kelas: document.getElementById('kode_kelas').value,
-                student_id: currentUser.user_id
-            };
-
             try {
                 const response = await fetch(scriptURL, {
-                    method: 'POST', body: JSON.stringify(payloadData),
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'join_class', kode_kelas: document.getElementById('kode_kelas').value, student_id: currentUser.user_id }),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                 });
                 const result = await response.json();
