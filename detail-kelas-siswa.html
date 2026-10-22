@@ -13,20 +13,17 @@
             min-height: 100vh; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
-        /* Glass panel versi Light Mode */
         .glass-panel { 
             background: rgba(255, 255, 255, 0.85); 
             backdrop-filter: blur(12px); 
             border: 1px solid rgba(226, 232, 240, 0.8); 
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); 
         }
-        /* Custom scrollbar untuk dokumen */
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        /* Input Styling modern */
         .modern-input {
             background-color: #ffffff;
             border: 1px solid #cbd5e1;
@@ -50,7 +47,6 @@
 </head>
 <body class="p-4 md:p-8">
 
-    <!-- Navbar Utama -->
     <nav class="glass-panel rounded-2xl p-4 mb-6 flex justify-between items-center max-w-4xl mx-auto">
         <div class="flex items-center gap-4">
             <a href="dashboard-siswa.html" class="text-slate-400 hover:text-slate-700 transition-colors">
@@ -66,10 +62,8 @@
         <div class="text-sm font-semibold text-sky-700 bg-sky-50 px-3 py-1 rounded-full border border-sky-200 shadow-xs">Mode Siswa</div>
     </nav>
 
-    <!-- Konten Utama (Maksimal Lebar Konsisten) -->
     <div class="max-w-4xl mx-auto space-y-6">
         
-        <!-- KARTU INDIKATOR PROGRESS BELAJAR (PROGRESS BAR) -->
         <div class="glass-panel rounded-2xl p-5 border border-slate-200 space-y-2">
             <div class="flex justify-between items-center text-xs font-bold text-slate-700">
                 <span class="flex items-center gap-1.5">📊 Progress Penyelesaian Kelas</span>
@@ -84,7 +78,6 @@
             </div>
         </div>
 
-        <!-- Sistem Tab Navigasi Kategori -->
         <div class="flex rounded-xl p-1.5 glass-panel border border-slate-200 gap-2">
             <button onclick="switchTab('materi')" id="tabBtnMateri" class="flex-1 py-2.5 px-4 rounded-lg font-bold text-sm transition-all bg-sky-500 text-white shadow-sm cursor-pointer flex items-center justify-center gap-2">
                 <span>📖 Materi Pembelajaran</span>
@@ -94,7 +87,6 @@
             </button>
         </div>
 
-        <!-- TAB SECTION: MATERI -->
         <div id="sectionMateri" class="space-y-4">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-bold text-slate-800">Daftar Materi Pembelajaran</h2>
@@ -104,12 +96,10 @@
             </div>
         </div>
 
-        <!-- TAB SECTION: TUGAS -->
         <div id="sectionTugas" class="space-y-4 hidden">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <h2 class="text-xl font-bold text-slate-800">Daftar Tugas & Evaluasi</h2>
                 
-                <!-- Filter Status Tugas -->
                 <div class="flex rounded-lg bg-slate-200/70 p-1 border border-slate-300 text-xs font-semibold">
                     <button onclick="filterTugas('semua')" id="filterSemua" class="px-3 py-1.5 rounded-md bg-white text-slate-800 shadow-xs transition-all cursor-pointer">Semua</button>
                     <button onclick="filterTugas('belum')" id="filterBelum" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all cursor-pointer">Belum Selesai</button>
@@ -124,7 +114,6 @@
 
     </div>
 
-    <!-- MODAL POP-UP TANYA GURU -->
     <div id="modalTanyaGuru" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -142,7 +131,6 @@
     </div>
 
     <script>
-        // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
         let currentUser = null;
         let globalAssignments = []; 
@@ -153,6 +141,7 @@
         let activeTimers = {};
         let statusScrollBawah = {};
         let statusWaktuTuntas = {};
+        let essayStartTimes = {};
         
         const urlParams = new URLSearchParams(window.location.search);
         const classId = urlParams.get('id');
@@ -161,12 +150,9 @@
             if (!localStorage.getItem('lms_user') || JSON.parse(localStorage.getItem('lms_user')).role !== 'Siswa') return window.location.href = 'index.html';
             currentUser = JSON.parse(localStorage.getItem('lms_user'));
             document.getElementById('namaKelasTitle').innerText = urlParams.get('nama') || "Detail Kelas";
-            
-            // Panggil 1 fungsi batch request super cepat (Anti-Lag)
             muatDataRuangKelasSiswa(); 
         };
 
-        // --- FUNGSI BATCH GABUNGAN (ANTI-LAG) ---
         async function muatDataRuangKelasSiswa() {
             try {
                 const res = await fetch(scriptURL, { 
@@ -200,7 +186,6 @@
             }
         }
 
-        // --- RENDER MATERI DENGAN VERIFIKASI WAKTU, SCROLL, TOMBOL TANYA, & FEEDBACK GURU ---
         function renderDaftarMateri() {
             const container = document.getElementById('daftarMateriContainer');
             if (globalMaterials.length === 0) {
@@ -294,7 +279,6 @@
                     }, 500);
                 }
 
-                // Filter pertanyaan milik siswa ini yang dikirim pada materi ini
                 const myQuestions = globalStudentQuestions.filter(q => q.material_id === materi.material_id && q.student_id === currentUser.user_id);
                 let tanyaFeedbackHTML = '';
                 if (myQuestions.length > 0) {
@@ -342,7 +326,6 @@
             });
         }
 
-        // --- HITUNG PROGRESS BELAJAR KELAS ---
         function hitungProgressKelas() {
             const totalMateri = globalMaterials.length;
             const tuntasMateri = globalReads.filter(r => r.student_id === currentUser.user_id && globalMaterials.some(m => m.material_id === r.material_id)).length;
@@ -363,7 +346,6 @@
             document.getElementById('infoTugasTuntas').innerText = `Tugas dikumpul: ${tuntasTugas}/${totalTugas}`;
         }
 
-        // --- FUNGSI MODAL TANYA GURU ---
         function bukaModalTanya(materialId, judulMateri) {
             document.getElementById('activeMaterialIdTanya').value = materialId;
             document.getElementById('infoMateriTanyaLabel').innerText = `Materi: "${judulMateri}". Tuliskan pertanyaan atau kendala pemahaman Anda kepada guru.`;
@@ -408,7 +390,7 @@
                 if (result.status === 'success' || res.ok) {
                     alert("Pertanyaan berhasil dikirim ke guru pengajar!");
                     tutupModalTanya();
-                    muatDataRuangKelasSiswa(); // Refresh data instan
+                    muatDataRuangKelasSiswa(); 
                 } else {
                     alert(`Catatan: ${result.message || 'Berhasil dikirim'}`);
                     tutupModalTanya();
@@ -424,7 +406,6 @@
             }
         }
 
-        // --- LOGIKA TIMER VIDEO (90 DETIK) ---
         function mulaiTimerVideo(materialId, durasiTotal) {
             const btnMulai = document.getElementById(`btn_mulai_tonton_${materialId}`);
             const btnKonfirmasi = document.getElementById(`btn_materi_${materialId}`);
@@ -452,7 +433,6 @@
             }, 1000);
         }
 
-        // --- LOGIKA DOKUMEN: SCROLL SAMPAI BAWAH + WAKTU BACA 65 DETIK ---
         function cekScrollBawah(materialId) {
             const box = document.getElementById(`scroll_box_${materialId}`);
             if (!box) return;
@@ -499,7 +479,6 @@
             }
         }
 
-        // --- FUNGSI MENCATAT STATUS BACA MATERI KE BACKEND ---
         async function tandaiSudahDibaca(materialId) {
             try {
                 const res = await fetch(scriptURL, {
@@ -518,7 +497,6 @@
             }
         }
 
-        // --- FUNGSI SWITCH TAB ---
         function switchTab(tabName) {
             const btnMateri = document.getElementById('tabBtnMateri');
             const btnTugas = document.getElementById('tabBtnTugas');
@@ -538,7 +516,6 @@
             }
         }
 
-        // --- FUNGSI FILTER TUGAS ---
         function filterTugas(status) {
             currentFilter = status;
             
@@ -558,7 +535,22 @@
             renderDaftarTugas(filtered);
         }
 
-        // --- RENDER DAFTAR TUGAS DENGAN PILIHAN ESAI (CANVAS STYLE) ---
+        function catatMulaiKetik(assignmentId) {
+            if (!essayStartTimes[assignmentId]) {
+                essayStartTimes[assignmentId] = new Date().getTime();
+            }
+        }
+
+        function cekShortcutEsai(event) {
+            if (event.ctrlKey || event.metaKey) {
+                const key = event.key.toLowerCase();
+                if (key === 'c' || key === 'v' || key === 'x' || key === 'a') {
+                    event.preventDefault();
+                    return false;
+                }
+            }
+        }
+
         function renderDaftarTugas(dataTugas) {
             const container = document.getElementById('daftarTugasContainer');
             
@@ -596,6 +588,21 @@
                     `;
                 }
 
+                let flagBadge = "";
+                if (isSubmitted && tugas.submitted_text && tugas.submitted_text !== 'Jawaban Esai Langsung (LMS)') {
+                    if (tugas.flag_status === "Terdeteksi Instan") {
+                        flagBadge = `
+                            <div class="mt-2.5 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-center gap-2">
+                                <span>⚠️ <strong>Catatan Sistem:</strong> Pengerjaan terdeteksi sangat cepat (${tugas.durasi_detik || 0} detik). Ditandai untuk peninjauan guru.</span>
+                            </div>`;
+                    } else {
+                        flagBadge = `
+                            <div class="mt-2.5 p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-center gap-2">
+                                <span>✅ <strong>Validasi Sistem:</strong> Pola pengetikan mandiri normal (${tugas.durasi_detik || 0} detik).</span>
+                            </div>`;
+                    }
+                }
+
                 let submissionHTML = isSubmitted ? `
                     <div class="mt-4 pt-4 border-t border-slate-200 bg-slate-50/60 p-4 rounded-xl border">
                         <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Status Pengumpulan Anda</div>
@@ -603,7 +610,8 @@
                             <span class="block text-xs font-semibold text-slate-500 mb-1">Jawaban / Berkas Terkirim:</span>
                             <div class="bg-white p-3 rounded-lg border border-slate-200 text-slate-800 text-sm whitespace-pre-line">${tugas.submitted_text || tugas.submitted_url || 'Tidak ada teks'}</div>
                         </div>
-                        <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-slate-200 shadow-2xs">
+                        ${flagBadge}
+                        <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-slate-200 shadow-2xs mt-3">
                             <div class="flex items-center gap-2">
                                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                                 <span class="text-xs font-bold text-slate-700">Nilai Akhir: <strong class="text-base text-emerald-600">${tugas.nilai !== undefined && tugas.nilai !== "" ? tugas.nilai : 'Belum Dinilai'}</strong></span>
@@ -626,10 +634,11 @@
                                 <option value="file">📁 Upload File (PDF / Gambar / Doc)</option>
                             </select>
                             
-                            <!-- Lembar Esai Langsung (Anti Copy-Paste & Anti Paste) -->
+                            <!-- Lembar Esai Aman (Secure Essay & Anti Copy-Paste Aktif Kembali) -->
                             <div id="div_esai_${tugas.assignment_id}" class="mb-4">
                                 <label class="block text-xs font-bold text-slate-600 mb-1">Lembar Jawaban Esai (Pengetikan Mandiri):</label>
                                 <textarea id="text_esai_${tugas.assignment_id}" rows="6" 
+                                    onfocus="catatMulaiKetik('${tugas.assignment_id}')"
                                     oncopy="return false" 
                                     onpaste="return false" 
                                     oncut="return false" 
@@ -637,15 +646,13 @@
                                     onkeydown="cekShortcutEsai(event)"
                                     class="w-full rounded-xl p-3 modern-input text-sm secure-essay" 
                                     placeholder="Ketik jawaban esai Anda langsung di sini... (Fitur Salin & Tempel dinonaktifkan)"></textarea>
-                                <div class="text-[11px] text-amber-600 font-medium mt-1">🔒 Kebijakan Integritas: Anda wajib mengetik jawaban secara langsung (Copy & Paste dinonaktifkan).</div>
+                                <div class="text-[11px] text-amber-600 font-medium mt-1">🔒 Kebijakan Integritas: Anda wajib mengetik jawaban secara mandiri (Di bawah 60 detik akan ditinjau sistem).</div>
                             </div>
 
-                            <!-- Input Tautan -->
                             <div id="div_link_${tugas.assignment_id}" class="hidden mb-4">
                                 <input type="url" id="url_${tugas.assignment_id}" class="w-full rounded-lg text-sm px-4 py-2 modern-input" placeholder="Masukkan Tautan (https://...)">
                             </div>
                             
-                            <!-- Input File -->
                             <div id="div_file_${tugas.assignment_id}" class="hidden mb-4">
                                 <input type="file" id="file_${tugas.assignment_id}" class="w-full rounded-lg text-sm px-4 py-1.5 modern-input mb-1" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
                                 <div class="text-[11px] font-semibold text-amber-600">* Maksimal ukuran file dibatasi 200 KB.</div>
@@ -674,18 +681,6 @@
             });
         }
 
-        // --- PENGAMAN TAMBAHAN: BLOKIR SHORTCUT KEYBOARD (CTRL+C, CTRL+V, CTRL+X, CTRL+A) ---
-        function cekShortcutEsai(event) {
-            if (event.ctrlKey || event.metaKey) {
-                const key = event.key.toLowerCase();
-                if (key === 'c' || key === 'v' || key === 'x' || key === 'a') {
-                    event.preventDefault();
-                    return false;
-                }
-            }
-        }
-
-        // --- LIVE COUNTDOWN TIMER ---
         function mulaiTimerTugas() {
             setInterval(() => {
                 const timerElements = document.querySelectorAll('[id^="timer_"]');
@@ -764,8 +759,14 @@
                 if (!teksEsai || teksEsai.trim() === "") {
                     return alert("Lembar jawaban esai masih kosong!");
                 }
+                
+                const endTime = new Date().getTime();
+                const startTime = essayStartTimes[assignmentId] || endTime;
+                const durasiPengerjaanDetik = Math.max(1, Math.round((endTime - startTime) / 1000));
+                
                 payloadData.submitted_text = teksEsai;
                 payloadData.file_url = 'Jawaban Esai Langsung (LMS)';
+                payloadData.durasi_detik = durasiPengerjaanDetik;
             } else if (metode === 'link') {
                 const inputUrl = document.getElementById(`url_${assignmentId}`).value;
                 if (!inputUrl) return alert("Anda belum memasukkan Tautan tugas!");
@@ -776,7 +777,7 @@
                 const file = inputFile.files[0];
                 
                 if (file.size > 204800) {
-                    return alert(`Ukuran file Anda ${(file.size / 1024).toFixed(1)} KB. Melebihi batas maksimal 200 KB! Silakan kompres file Anda.`);
+                    return alert(`Ukuran file Anda ${(file.size / 1024).toFixed(1)} KB. Melebihi batas maksimal 200 KB!`);
                 }
 
                 payloadData.file_data = await getBase64(file);
@@ -798,7 +799,7 @@
                 
                 if (result.status === 'success') {
                     alert("Jawaban tugas berhasil dikirim!");
-                    muatDataRuangKelasSiswa(); // Muat ulang data secara instan
+                    muatDataRuangKelasSiswa(); 
                 } else {
                     alert(`Gagal: ${result.message}`);
                 }
