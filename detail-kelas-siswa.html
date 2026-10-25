@@ -633,11 +633,6 @@
                 return;
             }
 
-            // ⭐ Hitung apakah SEMUA materi sudah dibaca oleh siswa
-            const totalMateri = globalMaterials.length;
-            const tuntasMateriCount = globalReads.filter(r => r.student_id === currentUser.user_id && globalMaterials.some(m => m.material_id === r.material_id)).length;
-            const semuaMateriSudahDibaca = (totalMateri === 0) || (tuntasMateriCount >= totalMateri);
-
             container.innerHTML = '';
             dataTugas.forEach(tugas => {
                 let deadlineDate = new Date(tugas.tenggat_waktu);
@@ -648,6 +643,33 @@
                 let tglFormat = deadlineDate.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
                 let bgStatus = isSubmitted ? "bg-emerald-50/50 border-emerald-200" : (isExpired ? "bg-rose-50/50 border-rose-200" : "bg-white border-slate-200");
                 
+                // ⭐ Validasi Multi-Prasyarat Materi untuk Tugas Ini
+                let reqIds = (tugas.required_material_id && tugas.required_material_id.trim() !== '') ? tugas.required_material_id.split(',').map(s => s.trim()) : [];
+                let studentReadMaterialIds = globalReads.filter(r => r.student_id === currentUser.user_id).map(r => r.material_id);
+                
+                let prasyaratTuntas = true;
+                let missingMaterialTitles = [];
+                reqIds.forEach(id => {
+                    if (!studentReadMaterialIds.includes(id)) {
+                        prasyaratTuntas = false;
+                        let m = globalMaterials.find(mat => mat.material_id === id);
+                        if (m) missingMaterialTitles.push(m.judul_materi);
+                    }
+                });
+
+                let prasyaratInfoBadge = '';
+                if (reqIds.length > 0) {
+                    let allReqTitles = reqIds.map(id => {
+                        let m = globalMaterials.find(mat => mat.material_id === id);
+                        return m ? m.judul_materi : 'Materi';
+                    });
+                    if (prasyaratTuntas) {
+                        prasyaratInfoBadge = `<div class="mb-3 p-2.5 bg-emerald-50 rounded-lg border border-emerald-200 text-xs text-emerald-800 flex items-center gap-1.5"><span>✔ Syarat ${reqIds.length} materi prasyarat (${allReqTitles.join(', ')}) telah tuntas dibaca.</span></div>`;
+                    } else {
+                        prasyaratInfoBadge = `<div class="mb-3 p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-800 space-y-1"><strong>🔒 Prasyarat Belum Lengkap:</strong><br>Anda harus membaca materi: <span class="font-semibold">${missingMaterialTitles.join(', ')}</span> terlebih dahulu.</div>`;
+                    }
+                }
+
                 let lampiranTugasGuru = tugas.file_url && tugas.file_url !== 'Jawaban Esai Langsung (LMS)' ? `
                     <div class="mt-3 p-3 bg-sky-50/80 rounded-xl border border-sky-200/80 flex items-center justify-between">
                         <div class="flex items-center gap-2">
@@ -703,7 +725,7 @@
                                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                                 <span class="text-xs font-bold text-slate-700">Nilai Akhir: <strong class="text-base text-emerald-600">${tugas.nilai !== undefined && tugas.nilai !== "" ? tugas.nilai : 'Belum Dinilai'}</strong></span>
                             </div>
-                            ${(!isExpired && semuaMateriSudahDibaca) ? `<button onclick="document.getElementById('form_${tugas.assignment_id}').classList.toggle('hidden')" class="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline cursor-pointer bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">Perbaiki Jawaban ↺</button>` : '<span class="text-xs font-medium text-slate-400">Tenggat lewat</span>'}
+                            {(!isExpired && prasyaratTuntas) ? `<button onclick="document.getElementById('form_${tugas.assignment_id}').classList.toggle('hidden')" class="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline cursor-pointer bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">Perbaiki Jawaban ↺</button>` : '<span class="text-xs font-medium text-slate-400">Tenggat lewat / Terkunci</span>'}
                         </div>
                         ${feedbackSection}
                     </div>` : "";
@@ -711,13 +733,13 @@
                 let formHTML = "";
                 if (isExpired && !isSubmitted) {
                     formHTML = `<div class="mt-4 pt-4 border-t border-rose-200 text-center"><span class="text-sm text-rose-600 font-bold">❌ Waktu pengumpulan telah berakhir. Anda tidak dapat mengumpulkan tugas ini.</span></div>`;
-                } else if (!semuaMateriSudahDibaca && !isSubmitted) {
+                } else if (!prasyaratTuntas && !isSubmitted) {
                     formHTML = `
                         <div class="mt-4 pt-4 border-t border-amber-200 bg-amber-50/60 p-4 rounded-xl border border-amber-200 text-center space-y-2">
                             <div class="text-amber-800 font-bold text-xs flex items-center justify-center gap-1.5">
                                 <span>🔒 Tugas Terkunci (Prasyarat Materi Belum Tuntas)</span>
                             </div>
-                            <p class="text-xs text-amber-700">Anda harus membaca dan menuntaskan semua materi pembelajaran terlebih dahulu (${tuntasMateriCount}/${totalMateri}) pada tab <strong>Materi Pembelajaran</strong> sebelum dapat mengerjakan atau mengirim tugas ini.</p>
+                            <p class="text-xs text-amber-700">Anda harus menuntaskan membaca materi prasyarat di atas pada tab <strong>Materi Pembelajaran</strong> sebelum dapat mengerjakan atau mengirim tugas ini.</p>
                         </div>
                     `;
                 } else {
@@ -769,6 +791,7 @@
                         </div>
                         <p class="text-sm font-medium text-slate-500 mb-1">Tenggat: ${tglFormat}</p>
                         <p class="text-sm font-mono font-bold text-sky-600 mb-3" id="timer_${tugas.assignment_id}" data-deadline="${tugas.tenggat_waktu}">Menghitung sisa waktu...</p>
+                        ${prasyaratInfoBadge}
                         ${lampiranTugasGuru}
                         ${submissionHTML}
                         ${formHTML}
