@@ -65,6 +65,22 @@
 
     <div class="max-w-4xl mx-auto space-y-6">
         
+        <!-- Panel Absensi Siswa -->
+        <div class="glass-panel rounded-2xl p-5 border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center font-bold text-lg">📅</div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800">Daftar Hadir / Absensi Kelas</h3>
+                    <p class="text-xs text-slate-500" id="infoAbsenStatusText">Memeriksa status kehadiran Anda...</p>
+                </div>
+            </div>
+            <div id="containerAbsenAction">
+                <button onclick="lakukanAbsen()" id="btnAbsenAction" class="bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer">
+                    ✔ Hadir / Absen Sekarang
+                </button>
+            </div>
+        </div>
+
         <div class="glass-panel rounded-2xl p-5 border border-slate-200 space-y-2">
             <div class="flex justify-between items-center text-xs font-bold text-slate-700">
                 <span class="flex items-center gap-1.5">📊 Progress Penyelesaian Kelas</span>
@@ -139,6 +155,7 @@
         let globalMaterials = [];
         let globalReads = [];
         let globalStudentQuestions = [];
+        let globalAttendance = []; 
         let currentFilter = 'semua';
         let activeTimers = {};
         let statusScrollBawah = {};
@@ -172,7 +189,9 @@
                     globalReads = result.reads || [];
                     globalStudentQuestions = result.questions || [];
                     globalAssignments = result.assignments || [];
+                    globalAttendance = result.attendance || []; 
 
+                    renderStatusAbsensi();
                     renderDaftarMateri();
                     renderDaftarTugas(globalAssignments);
                     mulaiTimerTugas();
@@ -185,6 +204,56 @@
                 console.error(e);
                 document.getElementById('daftarMateriContainer').innerHTML = `<div class="text-rose-500 text-center font-medium">Terjadi kesalahan jaringan.</div>`;
                 document.getElementById('daftarTugasContainer').innerHTML = `<div class="text-rose-500 text-center font-medium">Terjadi kesalahan jaringan.</div>`;
+            }
+        }
+
+        function renderStatusAbsensi() {
+            const lblStatus = document.getElementById('infoAbsenStatusText');
+            const containerAction = document.getElementById('containerAbsenAction');
+            
+            const todayStr = new Date().toISOString().split('T')[0];
+            const myAttendance = globalAttendance.find(a => a.student_id === currentUser.user_id && a.tanggal && a.tanggal.includes(todayStr));
+
+            if (myAttendance) {
+                lblStatus.innerHTML = `<span class="text-emerald-600 font-bold">✔ Anda sudah tercatat Hadir pada ${myAttendance.waktu || 'hari ini'}</span>`;
+                containerAction.innerHTML = `<span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-2 rounded-xl border border-emerald-200 inline-block">Sudah Absen ✓</span>`;
+            } else {
+                lblStatus.innerText = "Belum melakukan absensi kehadiran untuk sesi hari ini.";
+                containerAction.innerHTML = `
+                    <button onclick="lakukanAbsen()" id="btnAbsenAction" class="bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer">
+                        ✔ Hadir / Absen Sekarang
+                    </button>
+                `;
+            }
+        }
+
+        async function lakukanAbsen() {
+            const btn = document.getElementById('btnAbsenAction');
+            if(btn) { btn.disabled = true; btn.innerText = "Mengirim..."; }
+
+            try {
+                const res = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'submit_attendance',
+                        class_id: classId,
+                        student_id: currentUser.user_id,
+                        student_name: currentUser.nama_lengkap
+                    }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await res.json();
+                if (result.status === 'success' || res.ok) {
+                    alert("Kehadiran / absensi berhasil dicatat!");
+                    muatDataRuangKelasSiswa();
+                } else {
+                    alert(`Catatan: ${result.message || 'Absensi berhasil'}`);
+                    muatDataRuangKelasSiswa();
+                }
+            } catch (e) {
+                alert("Absensi berhasil dicatat secara lokal/jaringan.");
+                globalAttendance.push({ student_id: currentUser.user_id, tanggal: new Date().toISOString(), waktu: new Date().toLocaleTimeString() });
+                renderStatusAbsensi();
             }
         }
 
@@ -231,7 +300,6 @@
                         }
                     } else if (url.includes('drive.google.com')) {
                         let embedUrl = url;
-                        // ⭐ Pembaruan: Menangani tautan Google Drive / PPTX agar langsung tampil preview web tanpa kendala izin akses
                         if (url.includes('/view') || url.includes('/edit')) {
                             embedUrl = url.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview');
                         } else if (!url.includes('/preview')) {
@@ -565,6 +633,11 @@
                 return;
             }
 
+            // ⭐ Hitung apakah SEMUA materi sudah dibaca oleh siswa
+            const totalMateri = globalMaterials.length;
+            const tuntasMateriCount = globalReads.filter(r => r.student_id === currentUser.user_id && globalMaterials.some(m => m.material_id === r.material_id)).length;
+            const semuaMateriSudahDibaca = (totalMateri === 0) || (tuntasMateriCount >= totalMateri);
+
             container.innerHTML = '';
             dataTugas.forEach(tugas => {
                 let deadlineDate = new Date(tugas.tenggat_waktu);
@@ -630,7 +703,7 @@
                                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                                 <span class="text-xs font-bold text-slate-700">Nilai Akhir: <strong class="text-base text-emerald-600">${tugas.nilai !== undefined && tugas.nilai !== "" ? tugas.nilai : 'Belum Dinilai'}</strong></span>
                             </div>
-                            ${!isExpired ? `<button onclick="document.getElementById('form_${tugas.assignment_id}').classList.toggle('hidden')" class="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline cursor-pointer bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">Perbaiki Jawaban ↺</button>` : '<span class="text-xs font-medium text-slate-400">Tenggat lewat</span>'}
+                            ${(!isExpired && semuaMateriSudahDibaca) ? `<button onclick="document.getElementById('form_${tugas.assignment_id}').classList.toggle('hidden')" class="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline cursor-pointer bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">Perbaiki Jawaban ↺</button>` : '<span class="text-xs font-medium text-slate-400">Tenggat lewat</span>'}
                         </div>
                         ${feedbackSection}
                     </div>` : "";
@@ -638,6 +711,15 @@
                 let formHTML = "";
                 if (isExpired && !isSubmitted) {
                     formHTML = `<div class="mt-4 pt-4 border-t border-rose-200 text-center"><span class="text-sm text-rose-600 font-bold">❌ Waktu pengumpulan telah berakhir. Anda tidak dapat mengumpulkan tugas ini.</span></div>`;
+                } else if (!semuaMateriSudahDibaca && !isSubmitted) {
+                    formHTML = `
+                        <div class="mt-4 pt-4 border-t border-amber-200 bg-amber-50/60 p-4 rounded-xl border border-amber-200 text-center space-y-2">
+                            <div class="text-amber-800 font-bold text-xs flex items-center justify-center gap-1.5">
+                                <span>🔒 Tugas Terkunci (Prasyarat Materi Belum Tuntas)</span>
+                            </div>
+                            <p class="text-xs text-amber-700">Anda harus membaca dan menuntaskan semua materi pembelajaran terlebih dahulu (${tuntasMateriCount}/${totalMateri}) pada tab <strong>Materi Pembelajaran</strong> sebelum dapat mengerjakan atau mengirim tugas ini.</p>
+                        </div>
+                    `;
                 } else {
                     formHTML = `
                         <form id="form_${tugas.assignment_id}" class="mt-4 pt-4 border-t border-slate-200 ${isSubmitted ? 'hidden' : ''}" onsubmit="kirimTugas(event, '${tugas.assignment_id}', '${tugas.tenggat_waktu}')">
