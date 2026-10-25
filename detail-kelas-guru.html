@@ -329,7 +329,7 @@
                     globalSubmissions = resultRoom.submissions || [];
                     globalQuestions = resultRoom.questions || [];
                     globalAttendance = resultRoom.attendance || [];
-                    globalReads = resultRoom.reads || []; // ⭐ Ambil reads langsung dari response room data backend guru
+                    globalReads = resultRoom.reads || []; 
                 }
 
                 if (resultProgress.status === 'success') {
@@ -692,7 +692,6 @@
                 const isHidden = materi.status_materi === 'sembunyi';
                 const badgeStatus = isHidden ? `<span class="bg-slate-100 text-slate-600 font-medium text-xs px-2 py-1 rounded border border-slate-300 mt-2 inline-block">🙈 Disembunyikan</span>` : `<span class="bg-emerald-50 text-emerald-600 font-medium text-xs px-2 py-1 rounded border border-emerald-200 mt-2 inline-block">👁️ Tampil</span>`;
 
-                // ⭐ Pemetaan ID dengan .trim() agar aman dari perbedaan spasi di Spreadsheet
                 const readersForThisMaterial = globalReads
                     .filter(r => String(r.material_id).trim() === String(materi.material_id).trim())
                     .map(r => String(r.student_id).trim());
