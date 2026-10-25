@@ -14,20 +14,17 @@
             min-height: 100vh; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
-        /* Glass panel versi Light Mode yang bersih dan profesional */
         .glass-panel { 
             background: rgba(255, 255, 255, 0.85); 
             backdrop-filter: blur(12px); 
             border: 1px solid rgba(226, 232, 240, 0.8); 
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); 
         }
-        /* Custom scrollbar untuk modal */
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        /* Input Styling modern */
         .modern-input {
             background-color: #ffffff;
             border: 1px solid #cbd5e1;
@@ -59,6 +56,7 @@
             <div class="text-xl font-bold text-sky-600" id="namaKelasTitle">Memuat Kelas...</div>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="bukaModalAbsensi()" class="bg-cyan-600 hover:bg-cyan-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm cursor-pointer">📅 Rekap Absen</button>
             <button onclick="bukaModalPertanyaanSiswa()" class="bg-indigo-500 hover:bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm cursor-pointer">💬 Tanya Siswa</button>
             <button id="btnDownloadRekap" onclick="downloadRekapNilai()" class="bg-amber-500 hover:bg-amber-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm cursor-pointer">📥 Unduh Excel</button>
             <button onclick="bukaModalDaftarSiswa()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm cursor-pointer">👥 Daftar Siswa</button>
@@ -107,7 +105,7 @@
                     </select>
                 </div>
 
-                <!-- Input Khusus Tugas: Jadwal & Tenggat -->
+                <!-- Input Khusus Tugas: Jadwal, Tenggat & Kontrol Prasyarat Materi -->
                 <div class="mb-6 hidden space-y-4" id="div_khusus_tugas">
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Waktu Publish (Tampil ke Siswa)</label>
@@ -120,6 +118,13 @@
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Tenggat Waktu (Deadline)</label>
                         <input type="datetime-local" id="tenggat_waktu" class="w-full rounded-lg px-4 py-2 modern-input">
+                    </div>
+                    <div class="p-3 bg-sky-50 rounded-xl border border-sky-200">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="syarat_wajib_materi" value="1" checked class="w-4 h-4 text-sky-600 rounded border-slate-300">
+                            <span class="text-xs font-bold text-slate-700">Wajibkan Siswa Menuntaskan Materi Sebelumnya</span>
+                        </label>
+                        <p class="text-[11px] text-slate-500 mt-1">Jika dicentang, siswa harus membaca semua materi sebelum bisa mengerjakan tugas ini.</p>
                     </div>
                 </div>
                 
@@ -149,6 +154,25 @@
             </div>
             <div class="text-sm text-slate-500 mb-3 font-medium" id="infoJumlahSiswa">Memuat data...</div>
             <div id="listSiswaContainer" class="overflow-y-auto space-y-2 flex-1 custom-scroll pr-2"></div>
+        </div>
+    </div>
+
+    <!-- Modal Rekap Absensi -->
+    <div id="modalAbsensi" class="fixed inset-0 z-50 hidden bg-slate-800/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-2xl border border-slate-200 shadow-xl flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">📅 Rekapitulasi Absensi Siswa</h2>
+                    <p class="text-xs text-slate-500">Daftar kehadiran siswa di kelas ini.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="downloadRekapAbsenExcel()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors shadow-xs">📥 Unduh Excel Absen</button>
+                    <button onclick="document.getElementById('modalAbsensi').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 cursor-pointer text-2xl leading-none">&times;</button>
+                </div>
+            </div>
+            <div id="listAbsensiContainer" class="overflow-y-auto space-y-3 flex-1 custom-scroll pr-2">
+                <div class="text-center text-slate-500 py-6">Memuat data absensi...</div>
+            </div>
         </div>
     </div>
 
@@ -183,7 +207,13 @@
                     </select>
                     <input type="datetime-local" id="edit_waktu_publish" class="w-full rounded-lg px-4 py-2 modern-input-amber hidden">
                 </div>
-                <div class="mb-6"><label class="block text-sm font-semibold text-slate-700 mb-1">Tenggat Waktu</label><input type="datetime-local" id="edit_tenggat_waktu" required class="w-full rounded-lg px-4 py-2 modern-input-amber"></div>
+                <div class="mb-4"><label class="block text-sm font-semibold text-slate-700 mb-1">Tenggat Waktu</label><input type="datetime-local" id="edit_tenggat_waktu" required class="w-full rounded-lg px-4 py-2 modern-input-amber"></div>
+                <div class="mb-6 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="edit_syarat_wajib_materi" value="1" class="w-4 h-4 text-amber-600 rounded border-slate-300">
+                        <span class="text-xs font-bold text-slate-700">Wajibkan Siswa Menuntaskan Materi Sebelumnya</span>
+                    </label>
+                </div>
                 <div class="flex gap-3">
                     <button type="button" onclick="document.getElementById('modalEditTugas').classList.add('hidden')" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 rounded-lg cursor-pointer transition-colors">Batal</button>
                     <button type="submit" id="btnSimpanEdit" class="w-1/2 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 rounded-lg cursor-pointer transition-colors">Simpan</button>
@@ -243,7 +273,6 @@
     </div>
 
     <script>
-        // GANTI DENGAN URL WEB APP ANDA
         const scriptURL = 'https://script.google.com/macros/s/AKfycbyTICgF-NqTCpCw3A38R_wgxJ9AZZiXB9Y1yYaGG81LtyaRRUG95qBimEZ_5snTYoxj/exec';
         let currentUser = null;
         let globalStudents = [];
@@ -252,6 +281,7 @@
         let globalSubmissions = [];
         let globalQuestions = [];
         let globalReads = [];
+        let globalAttendance = [];
 
         const urlParams = new URLSearchParams(window.location.search);
         const classId = urlParams.get('id');
@@ -264,39 +294,26 @@
             document.getElementById('namaKelasTitle').innerText = namaKelas;
             document.getElementById('btnRekapTugas').href = `rekap-tugas-guru.html?id=${classId}&nama=${encodeURIComponent(namaKelas)}`;
             
-            // Panggil 1 fungsi batch request super cepat untuk guru (Anti-Lag)
             muatDataGuruKelas();
         };
 
-        // --- FUNGSI BATCH GABUNGAN GURU (ANTI-LAG) ---
         async function muatDataGuruKelas() {
             try {
-                // Ambil data ruangan kelas guru sekaligus
                 const resRoom = await fetch(scriptURL, { 
                     method: 'POST', 
-                    body: JSON.stringify({ 
-                        action: 'get_teacher_room_data', 
-                        class_id: classId 
-                    }) 
+                    body: JSON.stringify({ action: 'get_teacher_room_data', class_id: classId }) 
                 });
                 const resultRoom = await resRoom.json();
 
-                // Ambil progress siswa (untuk daftar siswa & statistik)
                 const resProgress = await fetch(scriptURL, { 
                     method: 'POST', 
-                    body: JSON.stringify({ 
-                        action: 'get_class_progress', 
-                        class_id: classId 
-                    }) 
+                    body: JSON.stringify({ action: 'get_class_progress', class_id: classId }) 
                 });
                 const resultProgress = await resProgress.json();
 
-                // Ambil status baca materi (MaterialReads)
                 const resReads = await fetch(scriptURL, { 
                     method: 'POST', 
-                    body: JSON.stringify({ 
-                        action: 'get_material_reads' 
-                    }) 
+                    body: JSON.stringify({ action: 'get_material_reads' }) 
                 });
                 const resultReads = await resReads.json();
 
@@ -305,6 +322,7 @@
                     globalAssignments = resultRoom.assignments || [];
                     globalSubmissions = resultRoom.submissions || [];
                     globalQuestions = resultRoom.questions || [];
+                    globalAttendance = resultRoom.attendance || [];
                 }
 
                 if (resultProgress.status === 'success') {
@@ -316,7 +334,6 @@
                 renderDaftarMateriGuru();
                 renderDaftarTugasGuru();
                 
-                // Jika modal pertanyaan terbuka, perbarui isinya
                 const modalQ = document.getElementById('modalPertanyaanSiswa');
                 if (modalQ && !modalQ.classList.contains('hidden')) {
                     renderDaftarPertanyaanGuru();
@@ -328,7 +345,6 @@
             }
         }
 
-        // --- MANAJEMEN UI FORM ---
         function toggleFormType() {
             const tipe = document.getElementById('tipe_postingan').value;
             if (tipe === 'materi') {
@@ -360,42 +376,26 @@
             else { input.classList.add('hidden'); input.required = false; }
         }
 
-        // --- FITUR KIRIM WA MANUAL (HEMAT TOKEN) ---
         async function kirimWaManual(jenis, id, judul) {
             const btn = document.getElementById(`btnWa_${id}`);
-            if (btn) {
-                btn.disabled = true;
-                btn.innerText = "Mengirim...";
-            }
+            if (btn) { btn.disabled = true; btn.innerText = "Mengirim..."; }
 
             try {
                 const res = await fetch(scriptURL, {
                     method: 'POST',
-                    body: JSON.stringify({
-                        action: 'send_manual_broadcast',
-                        class_id: classId,
-                        jenis: jenis, // 'materi' atau 'tugas'
-                        judul: judul
-                    }),
+                    body: JSON.stringify({ action: 'send_manual_broadcast', class_id: classId, jenis: jenis, judul: judul }),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                 });
                 const result = await res.json();
-                if (result.status === 'success') {
-                    alert(result.message);
-                } else {
-                    alert(`Gagal: ${result.message}`);
-                }
+                if (result.status === 'success') alert(result.message);
+                else alert(`Gagal: ${result.message}`);
             } catch (err) {
                 alert("Terjadi kesalahan jaringan saat mengirim WA.");
             } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = "📱 Kirim WA";
-                }
+                if (btn) { btn.disabled = false; btn.innerHTML = "📱 Kirim WA"; }
             }
         }
 
-        // --- FITUR DOWNLOAD EXCEL (.xlsx) ---
         async function downloadRekapNilai() {
             const btn = document.getElementById('btnDownloadRekap');
             const originalText = btn.innerHTML;
@@ -405,7 +405,6 @@
             try {
                 const assignments = globalAssignments;
                 if (assignments.length === 0) { alert("Belum ada tugas yang diposting di kelas ini."); return; }
-
                 const students = globalStudents;
                 if (students.length === 0) { alert("Tidak ada siswa yang tergabung di kelas ini."); return; }
 
@@ -439,21 +438,19 @@
                 XLSX.utils.book_append_sheet(wb, ws, "Rekap Nilai");
                 XLSX.writeFile(wb, `Rekap_Nilai_${namaKelas.replace(/\s+/g, '_')}.xlsx`);
             } catch (error) { 
-                alert("Gagal mengunduh rekap nilai. Pastikan koneksi internet stabil."); 
+                alert("Gagal mengunduh rekap nilai."); 
             } finally { 
                 btn.innerHTML = originalText; 
                 btn.disabled = false; 
             }
         }
 
-        // --- FITUR DAFTAR SISWA ---
         function bukaModalDaftarSiswa() {
             document.getElementById('modalDaftarSiswa').classList.remove('hidden');
             const container = document.getElementById('listSiswaContainer');
             const infoJumlah = document.getElementById('infoJumlahSiswa');
             
             infoJumlah.innerText = `Total: ${globalStudents.length} Siswa Terdaftar`;
-            
             if (globalStudents.length > 0) {
                 container.innerHTML = '';
                 globalStudents.forEach((siswa, index) => {
@@ -464,11 +461,50 @@
                         </div>`;
                 });
             } else { 
-                container.innerHTML = '<div class="text-center border border-slate-300 border-dashed rounded-lg p-6 text-slate-500">Belum ada siswa yang bergabung di kelas ini.</div>'; 
+                container.innerHTML = '<div class="text-center border border-slate-300 border-dashed rounded-lg p-6 text-slate-500">Belum ada siswa.</div>'; 
             }
         }
 
-        // --- FITUR TANYA GURU (PERTANYAAN SISWA) ---
+        // ⭐ Modal Rekap Absensi Guru
+        function bukaModalAbsensi() {
+            document.getElementById('modalAbsensi').classList.remove('hidden');
+            const container = document.getElementById('listAbsensiContainer');
+            
+            if (globalAttendance.length > 0) {
+                container.innerHTML = '';
+                // Urutkan berdasarkan waktu terbaru
+                let sortedAtt = [...globalAttendance].reverse();
+                sortedAtt.forEach((att, idx) => {
+                    let tgl = new Date(att.tanggal).toLocaleDateString('id-ID', { dateStyle: 'full' });
+                    container.innerHTML += `
+                        <div class="bg-white border border-slate-200 p-3.5 rounded-xl flex justify-between items-center shadow-2xs">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">👤 ${att.student_name}</h4>
+                                <p class="text-xs text-slate-500">Tanggal: ${tgl}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="bg-emerald-50 text-emerald-700 font-bold text-xs px-2.5 py-1 rounded-full border border-emerald-200">Hadir (${att.waktu || 'Tepat Waktu'})</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                container.innerHTML = '<div class="text-center border border-slate-300 border-dashed rounded-lg p-8 text-slate-500">Belum ada data absensi tercatat di kelas ini.</div>';
+            }
+        }
+
+        function downloadRekapAbsenExcel() {
+            if (globalAttendance.length === 0) return alert("Belum ada data absensi untuk diunduh.");
+            let excelData = [["Nama Siswa", "Tanggal Absen", "Waktu Absen", "Status"]];
+            globalAttendance.forEach(a => {
+                excelData.push([a.student_name, a.tanggal.split('T')[0], a.waktu || '-', 'Hadir']);
+            });
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Rekap Absen");
+            XLSX.writeFile(wb, `Rekap_Absensi_${namaKelas.replace(/\s+/g, '_')}.xlsx`);
+        }
+
         function bukaModalPertanyaanSiswa() {
             document.getElementById('modalPertanyaanSiswa').classList.remove('hidden');
             renderDaftarPertanyaanGuru();
@@ -480,7 +516,7 @@
                 container.innerHTML = '';
                 globalQuestions.forEach(q => {
                     const matObj = globalMaterials.find(m => m.material_id === q.material_id);
-                    const judulMateri = matObj ? matObj.judul_materi : "Materi Umum / Dihapus";
+                    const judulMateri = matObj ? matObj.judul_materi : "Materi Umum";
                     const waktuFormatted = new Date(q.waktu).toLocaleString('id-ID');
 
                     container.innerHTML += `
@@ -492,12 +528,10 @@
                                 </div>
                                 <span class="text-[10px] text-slate-400">${waktuFormatted}</span>
                             </div>
-                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm text-slate-700 whitespace-pre-line">
-                                ${q.pesan}
-                            </div>
+                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm text-slate-700 whitespace-pre-line">${q.pesan}</div>
                             <div class="space-y-2 pt-2 border-t border-slate-100">
-                                <label class="block text-xs font-bold text-slate-600">Balasan / Umpan Balik Guru:</label>
-                                <textarea id="reply_${q.question_id}" rows="2" class="w-full rounded-lg p-2.5 modern-input text-xs" placeholder="Tulis balasan untuk siswa...">${q.jawaban_guru || ''}</textarea>
+                                <label class="block text-xs font-bold text-slate-600">Balasan Guru:</label>
+                                <textarea id="reply_${q.question_id}" rows="2" class="w-full rounded-lg p-2.5 modern-input text-xs" placeholder="Tulis balasan...">${q.jawaban_guru || ''}</textarea>
                                 <div class="text-right">
                                     <button onclick="kirimBalasan('${q.question_id}')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs px-4 py-2 rounded-lg transition-colors cursor-pointer shadow-xs">Kirim Balasan ✓</button>
                                 </div>
@@ -505,14 +539,13 @@
                         </div>`;
                 });
             } else {
-                container.innerHTML = '<div class="text-center border border-slate-300 border-dashed rounded-lg p-8 text-slate-500">Belum ada pertanyaan atau kendala dari siswa di kelas ini.</div>';
+                container.innerHTML = '<div class="text-center border border-slate-300 border-dashed rounded-lg p-8 text-slate-500">Belum ada pertanyaan siswa.</div>';
             }
         }
 
         async function kirimBalasan(questionId) {
             const jawaban = document.getElementById(`reply_${questionId}`).value;
-            if (!jawaban || jawaban.trim() === "") return alert("Balasan tidak boleh kosong!");
-
+            if (!jawaban || jawaban.trim() === "") return alert("Balasan kosong!");
             try {
                 const res = await fetch(scriptURL, {
                     method: 'POST',
@@ -520,18 +553,10 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                 });
                 const result = await res.json();
-                if (result.status === 'success') {
-                    alert("Balasan berhasil dikirim ke siswa!");
-                    muatDataGuruKelas(); 
-                } else {
-                    alert(`Gagal: ${result.message}`);
-                }
-            } catch (e) {
-                alert("Terjadi kesalahan jaringan.");
-            }
+                if (result.status === 'success') { alert("Balasan terkirim!"); muatDataGuruKelas(); }
+            } catch (e) { alert("Kesalahan jaringan."); }
         }
 
-        // --- FITUR TRANSFER KONTEN ---
         async function bukaModalTransfer(tipe, judul, deskripsi, link, tenggat) {
             document.getElementById('transfer_tipe').value = tipe;
             document.getElementById('transfer_judul').value = judul;
@@ -554,16 +579,15 @@
                             selectKelas.innerHTML += `<option value="${kelas.class_id}">${kelas.nama_kelas} (Kode: ${kelas.kode_kelas})</option>`;
                         }
                     });
-                    if (selectKelas.options.length <= 1) selectKelas.innerHTML = '<option value="">Tidak ada kelas lain tersedia</option>';
-                } else selectKelas.innerHTML = '<option value="">Gagal memuat daftar kelas</option>';
-            } catch (e) { selectKelas.innerHTML = '<option value="">Terjadi kesalahan jaringan</option>'; }
+                }
+            } catch (e) { selectKelas.innerHTML = '<option value="">Gagal memuat kelas</option>'; }
         }
 
         async function prosesTransfer(e) {
             e.preventDefault();
             const btn = document.getElementById('btnProsesTransfer');
             const kelasTujuanId = document.getElementById('select_kelas_tujuan').value;
-            if (!kelasTujuanId) return alert("Silakan pilih kelas tujuan!");
+            if (!kelasTujuanId) return alert("Pilih kelas tujuan!");
 
             btn.disabled = true; btn.innerHTML = 'Mentransfer...';
             const tipe = document.getElementById('transfer_tipe').value;
@@ -582,15 +606,11 @@
             try {
                 const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify(payloadData) });
                 const result = await res.json();
-                if (result.status === 'success') {
-                    alert(`Berhasil mentransfer ${tipe === 'materi' ? 'materi' : 'tugas'} ke kelas tujuan!`);
-                    document.getElementById('modalTransfer').classList.add('hidden');
-                } else alert(`Gagal: ${result.message}`);
-            } catch (err) { alert("Terjadi kesalahan jaringan."); } 
+                if (result.status === 'success') { alert("Berhasil ditransfer!"); document.getElementById('modalTransfer').classList.add('hidden'); }
+            } catch (err) { alert("Kesalahan jaringan."); } 
             finally { btn.disabled = false; btn.innerHTML = 'Transfer'; }
         }
 
-        // --- RENDER KARTU MATERI DENGAN REKAP PEMBACA & TOMBOL WA ---
         function renderDaftarMateriGuru() {
             const container = document.getElementById('daftarMateriContainer');
             if (globalMaterials.length === 0) {
@@ -604,9 +624,7 @@
                 const linkHTML = materi.file_url ? `<a href="${materi.file_url}" target="_blank" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-sky-600 hover:text-sky-500 transition-colors">🔗 Buka Lampiran</a>` : '';
                 
                 const isHidden = materi.status_materi === 'sembunyi';
-                const badgeStatus = isHidden 
-                    ? `<span class="bg-slate-100 text-slate-600 font-medium text-xs px-2 py-1 rounded border border-slate-300 mt-2 inline-block">🙈 Disembunyikan</span>` 
-                    : `<span class="bg-emerald-50 text-emerald-600 font-medium text-xs px-2 py-1 rounded border border-emerald-200 mt-2 inline-block">👁️ Tampil</span>`;
+                const badgeStatus = isHidden ? `<span class="bg-slate-100 text-slate-600 font-medium text-xs px-2 py-1 rounded border border-slate-300 mt-2 inline-block">🙈 Disembunyikan</span>` : `<span class="bg-emerald-50 text-emerald-600 font-medium text-xs px-2 py-1 rounded border border-emerald-200 mt-2 inline-block">👁️ Tampil</span>`;
 
                 const readersForThisMaterial = globalReads.filter(r => r.material_id === materi.material_id).map(r => r.student_id);
                 const totalSiswa = globalStudents.length;
@@ -665,7 +683,6 @@
             });
         }
 
-        // --- RENDER DAFTAR TUGAS GURU DENGAN TOMBOL WA ---
         function renderDaftarTugasGuru() {
             const container = document.getElementById('daftarTugasContainer');
             if (globalAssignments.length === 0) {
@@ -688,7 +705,7 @@
                     isoPublish = new Date(pubDate.getTime() - (pubDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
                     if (pubDate > new Date()) {
                         isScheduled = true;
-                        badgeJadwal = `<span class="bg-amber-50 text-amber-600 font-medium text-xs px-2 py-1 rounded border border-amber-200 inline-block mt-2">📅 Dijadwalkan: ${pubDate.toLocaleString('id-ID', {dateStyle: 'short', timeStyle: 'short'})}</span>`;
+                        badgeJadwal = `<span class="bg-amber-50 text-amber-600 font-medium text-xs px-2 py-1 rounded border border-amber-200 inline-block mt-2">📅 Dijadwalkan</span>`;
                     }
                 }
 
@@ -712,11 +729,6 @@
                         </div>
                     </div>`;
             });
-        }
-
-        // --- SISTEM SUBMIT DATA KE BACKEND ---
-        function getBase64(file) {
-            return new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = error => reject(error); });
         }
 
         async function buatPostingan(event) {
@@ -807,21 +819,25 @@
         }
 
         async function hapusMateri(id) {
-            if (!confirm('Apakah Anda yakin ingin menghapus materi ini?')) return;
+            if (!confirm('Yakin ingin menghapus materi ini?')) return;
             try {
                 const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'delete_material', material_id: id }) });
                 const result = await res.json();
-                if (result.status === 'success') muatDataGuruKelas(); else alert(`Gagal menghapus: ${result.message}`);
-            } catch (e) { alert("Terjadi kesalahan jaringan."); }
+                if (result.status === 'success') muatDataGuruKelas();
+            } catch (e) { alert("Kesalahan jaringan."); }
         }
 
         async function hapusTugas(id) {
-            if (!confirm('Apakah Anda yakin ingin menghapus tugas ini?')) return;
+            if (!confirm('Yakin ingin menghapus tugas ini?')) return;
             try {
                 const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'delete_assignment', assignment_id: id }) });
                 const result = await res.json();
-                if (result.status === 'success') muatDataGuruKelas(); else alert(`Gagal menghapus: ${result.message}`);
-            } catch (e) { alert("Terjadi kesalahan jaringan."); }
+                if (result.status === 'success') muatDataGuruKelas();
+            } catch (e) { alert("Kesalahan jaringan."); }
+        }
+
+        function getBase64(file) {
+            return new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = error => reject(error); });
         }
     </script>
 </body>
