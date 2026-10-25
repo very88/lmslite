@@ -725,7 +725,7 @@
                                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                                 <span class="text-xs font-bold text-slate-700">Nilai Akhir: <strong class="text-base text-emerald-600">${tugas.nilai !== undefined && tugas.nilai !== "" ? tugas.nilai : 'Belum Dinilai'}</strong></span>
                             </div>
-                            {(!isExpired && prasyaratTuntas) ? `<button onclick="document.getElementById('form_${tugas.assignment_id}').classList.toggle('hidden')" class="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline cursor-pointer bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">Perbaiki Jawaban ↺</button>` : '<span class="text-xs font-medium text-slate-400">Tenggat lewat / Terkunci</span>'}
+                            ${(!isExpired && prasyaratTuntas) ? `<button onclick="document.getElementById('form_${tugas.assignment_id}').classList.toggle('hidden')" class="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline cursor-pointer bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">Perbaiki Jawaban ↺</button>` : '<span class="text-xs font-medium text-slate-400">Tenggat lewat / Terkunci</span>'}
                         </div>
                         ${feedbackSection}
                     </div>` : "";
