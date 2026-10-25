@@ -323,25 +323,18 @@
                 });
                 const resultProgress = await resProgress.json();
 
-                const resReads = await fetch(scriptURL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action: 'get_material_reads' }) 
-                });
-                const resultReads = await resReads.json();
-
                 if (resultRoom.status === 'success') {
                     globalMaterials = resultRoom.materials || [];
                     globalAssignments = resultRoom.assignments || [];
                     globalSubmissions = resultRoom.submissions || [];
                     globalQuestions = resultRoom.questions || [];
                     globalAttendance = resultRoom.attendance || [];
+                    globalReads = resultRoom.reads || []; // ⭐ Ambil reads langsung dari response room data backend guru
                 }
 
                 if (resultProgress.status === 'success') {
                     globalStudents = resultProgress.data.progress || [];
                 }
-
-                globalReads = (resultReads.status === 'success') ? (resultReads.data || []) : [];
 
                 renderCheckboxesPrasyarat('');
                 renderCheckboxesEditPrasyarat('');
@@ -699,13 +692,17 @@
                 const isHidden = materi.status_materi === 'sembunyi';
                 const badgeStatus = isHidden ? `<span class="bg-slate-100 text-slate-600 font-medium text-xs px-2 py-1 rounded border border-slate-300 mt-2 inline-block">🙈 Disembunyikan</span>` : `<span class="bg-emerald-50 text-emerald-600 font-medium text-xs px-2 py-1 rounded border border-emerald-200 mt-2 inline-block">👁️ Tampil</span>`;
 
-                const readersForThisMaterial = globalReads.filter(r => r.material_id === materi.material_id).map(r => r.student_id);
+                // ⭐ Pemetaan ID dengan .trim() agar aman dari perbedaan spasi di Spreadsheet
+                const readersForThisMaterial = globalReads
+                    .filter(r => String(r.material_id).trim() === String(materi.material_id).trim())
+                    .map(r => String(r.student_id).trim());
+
                 const totalSiswa = globalStudents.length;
-                const totalSudahBaca = globalStudents.filter(s => readersForThisMaterial.includes(s.student_id)).length;
+                const totalSudahBaca = globalStudents.filter(s => readersForThisMaterial.includes(String(s.student_id).trim())).length;
                 const persenBaca = totalSiswa > 0 ? Math.round((totalSudahBaca / totalSiswa) * 100) : 0;
 
-                let listSudah = globalStudents.filter(s => readersForThisMaterial.includes(s.student_id));
-                let listBelum = globalStudents.filter(s => !readersForThisMaterial.includes(s.student_id));
+                let listSudah = globalStudents.filter(s => readersForThisMaterial.includes(String(s.student_id).trim()));
+                let listBelum = globalStudents.filter(s => !readersForThisMaterial.includes(String(s.student_id).trim()));
 
                 let dropdownReadHTML = `
                     <div class="mt-4 pt-3 border-t border-slate-100 bg-slate-50/70 p-3 rounded-xl">
@@ -782,7 +779,6 @@
                     }
                 }
 
-                // ⭐ Hitung Siswa Layak vs Belum Layak Berdasarkan Multi-Prasyarat Materi
                 let prasyaratBadge = '';
                 let prasyaratHtml = '';
                 if (tugas.required_material_id && tugas.required_material_id.trim() !== '') {
@@ -798,7 +794,7 @@
                     let listBelumLayak = [];
 
                     globalStudents.forEach(s => {
-                        let studentReads = globalReads.filter(r => r.student_id === s.student_id).map(r => r.material_id);
+                        let studentReads = globalReads.filter(r => String(r.student_id).trim() === String(s.student_id).trim()).map(r => String(r.material_id).trim());
                         let isAllRead = reqIds.every(id => studentReads.includes(id));
                         if (isAllRead) {
                             listLayak.push(s);
