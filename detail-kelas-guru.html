@@ -105,7 +105,7 @@
                     </select>
                 </div>
 
-                <!-- Input Khusus Tugas: Jadwal, Tenggat & Kontrol Prasyarat Materi -->
+                <!-- Input Khusus Tugas: Jadwal, Tenggat & Kontrol Multi-Prasyarat Materi -->
                 <div class="mb-6 hidden space-y-4" id="div_khusus_tugas">
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Waktu Publish (Tampil ke Siswa)</label>
@@ -124,13 +124,13 @@
                             <input type="checkbox" id="syarat_wajib_materi" value="1" onchange="toggleSelectPrasyarat(this)" class="w-4 h-4 text-sky-600 rounded border-slate-300">
                             <span class="text-xs font-bold text-slate-700">Wajibkan Siswa Menuntaskan Materi Prasyarat</span>
                         </label>
-                        <div id="wrapper_select_prasyarat" class="hidden pt-1">
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Pilih Materi yang Harus Dibaca:</label>
-                            <select id="required_material_id" class="w-full rounded-lg px-3 py-1.5 modern-input text-xs">
-                                <option value="">-- Pilih Materi Prasyarat --</option>
-                            </select>
+                        <div id="wrapper_select_prasyarat" class="hidden pt-1 space-y-1.5">
+                            <label class="block text-[11px] font-semibold text-slate-600">Pilih Daftar Materi yang Wajib Dibaca:</label>
+                            <div id="containerCheckboxPrasyarat" class="max-h-36 overflow-y-auto bg-white border border-slate-200 rounded-lg p-2.5 space-y-1.5 custom-scroll text-xs">
+                                <span class="text-slate-400 italic">Memuat daftar materi...</span>
+                            </div>
                         </div>
-                        <p class="text-[11px] text-slate-500">Siswa harus membaca materi terpilih sebelum bisa mengerjakan tugas ini.</p>
+                        <p class="text-[11px] text-slate-500">Siswa harus menuntaskan seluruh materi yang dicentang sebelum bisa mengerjakan tugas ini.</p>
                     </div>
                 </div>
                 
@@ -219,11 +219,11 @@
                         <input type="checkbox" id="edit_syarat_wajib_materi" value="1" onchange="toggleEditSelectPrasyarat(this)" class="w-4 h-4 text-amber-600 rounded border-slate-300">
                         <span class="text-xs font-bold text-slate-700">Wajibkan Siswa Menuntaskan Materi Prasyarat</span>
                     </label>
-                    <div id="edit_wrapper_select_prasyarat" class="hidden pt-1">
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Pilih Materi yang Harus Dibaca:</label>
-                        <select id="edit_required_material_id" class="w-full rounded-lg px-3 py-1.5 modern-input-amber text-xs">
-                            <option value="">-- Pilih Materi Prasyarat --</option>
-                        </select>
+                    <div id="edit_wrapper_select_prasyarat" class="hidden pt-1 space-y-1.5">
+                        <label class="block text-[11px] font-semibold text-slate-600">Pilih Daftar Materi yang Wajib Dibaca:</label>
+                        <div id="editContainerCheckboxPrasyarat" class="max-h-36 overflow-y-auto bg-white border border-slate-200 rounded-lg p-2.5 space-y-1.5 custom-scroll text-xs">
+                            <span class="text-slate-400 italic">Memuat daftar materi...</span>
+                        </div>
                     </div>
                 </div>
                 <div class="flex gap-3">
@@ -343,7 +343,8 @@
 
                 globalReads = (resultReads.status === 'success') ? (resultReads.data || []) : [];
 
-                updateDropdownPrasyarat();
+                renderCheckboxesPrasyarat('');
+                renderCheckboxesEditPrasyarat('');
                 renderDaftarMateriGuru();
                 renderDaftarTugasGuru();
                 
@@ -358,26 +359,55 @@
             }
         }
 
-        function updateDropdownPrasyarat() {
-            const selectCreate = document.getElementById('required_material_id');
-            const selectEdit = document.getElementById('edit_required_material_id');
-            
-            let optionsHTML = '<option value="">-- Pilih Materi Prasyarat --</option>';
+        function renderCheckboxesPrasyarat(selectedIdsStr = '') {
+            const container = document.getElementById('containerCheckboxPrasyarat');
+            if (globalMaterials.length === 0) {
+                container.innerHTML = '<span class="text-slate-400 italic">Belum ada materi tersedia.</span>';
+                return;
+            }
+
+            let selectedIds = selectedIdsStr ? selectedIdsStr.split(',').map(s => s.trim()) : [];
+            let html = '';
             globalMaterials.forEach(m => {
-                optionsHTML += `<option value="${m.material_id}">${m.judul_materi}</option>`;
+                let isChecked = selectedIds.includes(m.material_id) ? 'checked' : '';
+                html += `
+                    <label class="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                        <input type="checkbox" name="prasyarat_materi" value="${m.material_id}" ${isChecked} class="w-3.5 h-3.5 text-sky-600 rounded border-slate-300">
+                        <span class="text-slate-700">${m.judul_materi}</span>
+                    </label>
+                `;
             });
-            
-            selectCreate.innerHTML = optionsHTML;
-            selectEdit.innerHTML = optionsHTML;
+            container.innerHTML = html;
+        }
+
+        function renderCheckboxesEditPrasyarat(selectedIdsStr = '') {
+            const container = document.getElementById('editContainerCheckboxPrasyarat');
+            if (globalMaterials.length === 0) {
+                container.innerHTML = '<span class="text-slate-400 italic">Belum ada materi tersedia.</span>';
+                return;
+            }
+
+            let selectedIds = selectedIdsStr ? selectedIdsStr.split(',').map(s => s.trim()) : [];
+            let html = '';
+            globalMaterials.forEach(m => {
+                let isChecked = selectedIds.includes(m.material_id) ? 'checked' : '';
+                html += `
+                    <label class="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                        <input type="checkbox" name="edit_prasyarat_materi" value="${m.material_id}" ${isChecked} class="w-3.5 h-3.5 text-amber-600 rounded border-slate-300">
+                        <span class="text-slate-700">${m.judul_materi}</span>
+                    </label>
+                `;
+            });
+            container.innerHTML = html;
         }
 
         function toggleSelectPrasyarat(checkbox) {
             const wrapper = document.getElementById('wrapper_select_prasyarat');
             if (checkbox.checked) {
                 wrapper.classList.remove('hidden');
+                renderCheckboxesPrasyarat('');
             } else {
                 wrapper.classList.add('hidden');
-                document.getElementById('required_material_id').value = '';
             }
         }
 
@@ -387,7 +417,6 @@
                 wrapper.classList.remove('hidden');
             } else {
                 wrapper.classList.add('hidden');
-                document.getElementById('edit_required_material_id').value = '';
             }
         }
 
@@ -753,28 +782,42 @@
                     }
                 }
 
-                // ⭐ Hitung Siswa Layak vs Belum Layak Berdasarkan Prasyarat Materi
+                // ⭐ Hitung Siswa Layak vs Belum Layak Berdasarkan Multi-Prasyarat Materi
                 let prasyaratBadge = '';
                 let prasyaratHtml = '';
-                if (tugas.required_material_id) {
-                    const reqMat = globalMaterials.find(m => m.material_id === tugas.required_material_id);
-                    const reqJudul = reqMat ? reqMat.judul_materi : "Materi Prasyarat";
-                    prasyaratBadge = `<span class="bg-indigo-50 text-indigo-700 font-medium text-xs px-2 py-1 rounded border border-indigo-200 inline-block mt-2 ml-1">🔒 Prasyarat: ${reqJudul}</span>`;
+                if (tugas.required_material_id && tugas.required_material_id.trim() !== '') {
+                    let reqIds = tugas.required_material_id.split(',').map(s => s.trim());
+                    let reqMatTitles = reqIds.map(id => {
+                        let m = globalMaterials.find(mat => mat.material_id === id);
+                        return m ? m.judul_materi : 'Materi';
+                    });
 
-                    const readers = globalReads.filter(r => r.material_id === tugas.required_material_id).map(r => r.student_id);
-                    const listLayak = globalStudents.filter(s => readers.includes(s.student_id));
-                    const listBelumLayak = globalStudents.filter(s => !readers.includes(s.student_id));
+                    prasyaratBadge = `<span class="bg-indigo-50 text-indigo-700 font-medium text-xs px-2 py-1 rounded border border-indigo-200 inline-block mt-2 ml-1" title="${reqMatTitles.join(', ')}">🔒 Prasyarat: ${reqIds.length} Materi Wajib</span>`;
+
+                    let listLayak = [];
+                    let listBelumLayak = [];
+
+                    globalStudents.forEach(s => {
+                        let studentReads = globalReads.filter(r => r.student_id === s.student_id).map(r => r.material_id);
+                        let isAllRead = reqIds.every(id => studentReads.includes(id));
+                        if (isAllRead) {
+                            listLayak.push(s);
+                        } else {
+                            listBelumLayak.push(s);
+                        }
+                    });
 
                     prasyaratHtml = `
                         <div class="mt-3 pt-3 border-t border-slate-100 bg-indigo-50/40 p-3 rounded-xl">
-                            <div class="text-xs font-bold text-slate-700 mb-2">🎓 Status Kelayakan Siswa Mengerjakan Tugas:</div>
+                            <div class="text-xs font-bold text-slate-700 mb-1">🎓 Status Kelayakan Siswa Mengerjakan Tugas:</div>
+                            <p class="text-[11px] text-slate-500 mb-2">Materi prasyarat: <span class="font-semibold text-indigo-600">${reqMatTitles.join(' • ')}</span></p>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                                 <div class="bg-emerald-50/90 border border-emerald-200 p-2 rounded-lg">
                                     <strong class="text-emerald-800 block mb-1">✔ Layak Mengerjakan (${listLayak.length}):</strong>
                                     <span class="text-slate-600">${listLayak.length > 0 ? listLayak.map(s => s.student_name).join(', ') : 'Belum ada'}</span>
                                 </div>
                                 <div class="bg-amber-50/90 border border-amber-200 p-2 rounded-lg">
-                                    <strong class="text-amber-800 block mb-1">⏳ Belum Layak / Belum Baca (${listBelumLayak.length}):</strong>
+                                    <strong class="text-amber-800 block mb-1">⏳ Belum Menuntaskan Semua (${listBelumLayak.length}):</strong>
                                     <span class="text-slate-600">${listBelumLayak.length > 0 ? listBelumLayak.map(s => s.student_name).join(', ') : 'Semua siswa sudah layak!'}</span>
                                 </div>
                             </div>
@@ -826,7 +869,12 @@
                 payloadData.waktu_publish = (opsiJadwal === 'jadwal') ? document.getElementById('waktu_publish_tugas').value : '';
                 
                 const pakaiSyarat = document.getElementById('syarat_wajib_materi').checked;
-                payloadData.required_material_id = pakaiSyarat ? document.getElementById('required_material_id').value : '';
+                let checkedIds = [];
+                if (pakaiSyarat) {
+                    const checkboxes = document.querySelectorAll('input[name="prasyarat_materi"]:checked');
+                    checkboxes.forEach(cb => checkedIds.push(cb.value));
+                }
+                payloadData.required_material_id = checkedIds.join(',');
             } else {
                 payloadData.judul_materi = document.getElementById('judul_postingan').value;
                 payloadData.deskripsi = document.getElementById('deskripsi_postingan').value;
@@ -868,11 +916,11 @@
             if (requiredMatId && requiredMatId.trim() !== '') {
                 document.getElementById('edit_syarat_wajib_materi').checked = true;
                 document.getElementById('edit_wrapper_select_prasyarat').classList.remove('hidden');
-                document.getElementById('edit_required_material_id').value = requiredMatId;
+                renderCheckboxesEditPrasyarat(requiredMatId);
             } else {
                 document.getElementById('edit_syarat_wajib_materi').checked = false;
                 document.getElementById('edit_wrapper_select_prasyarat').classList.add('hidden');
-                document.getElementById('edit_required_material_id').value = '';
+                renderCheckboxesEditPrasyarat('');
             }
 
             document.getElementById('modalEditTugas').classList.remove('hidden'); 
@@ -883,7 +931,13 @@
             const opsiJadwal = document.getElementById('edit_opsi_jadwal_tugas').value;
             const wktPublish = (opsiJadwal === 'jadwal') ? document.getElementById('edit_waktu_publish').value : '';
             const pakaiSyarat = document.getElementById('edit_syarat_wajib_materi').checked;
-            const reqMatId = pakaiSyarat ? document.getElementById('edit_required_material_id').value : '';
+            
+            let checkedIds = [];
+            if (pakaiSyarat) {
+                const checkboxes = document.querySelectorAll('input[name="edit_prasyarat_materi"]:checked');
+                checkboxes.forEach(cb => checkedIds.push(cb.value));
+            }
+            const reqMatId = checkedIds.join(',');
             
             try {
                 const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ 
