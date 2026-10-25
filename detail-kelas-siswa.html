@@ -158,8 +158,6 @@
         let globalAttendance = []; 
         let currentFilter = 'semua';
         let activeTimers = {};
-        let statusScrollBawah = {};
-        let statusWaktuTuntas = {};
         let essayStartTimes = {};
         
         const urlParams = new URLSearchParams(window.location.search);
@@ -307,9 +305,8 @@
                         }
                         
                         embedHTML = `
-                            <div id="scroll_box_${materi.material_id}" onscroll="cekScrollBawah('${materi.material_id}')" class="mt-4 w-full h-72 md:h-[480px] rounded-xl overflow-y-auto border border-slate-200 bg-slate-50 shadow-inner relative custom-scroll">
+                            <div class="mt-4 w-full h-72 md:h-[480px] rounded-xl overflow-y-auto border border-slate-200 bg-slate-50 shadow-inner relative custom-scroll">
                                 <iframe src="${embedUrl}" class="w-full h-full border-0"></iframe>
-                                <div class="absolute bottom-2 right-2 bg-slate-800/80 text-white text-[10px] px-2 py-1 rounded pointer-events-none">Gulir sampai bawah untuk verifikasi</div>
                             </div>
                             <div class="mt-2 text-right">
                                 <a href="${url}" target="_blank" class="text-xs font-semibold text-sky-600 hover:underline inline-flex items-center gap-1">Buka Presentasi / Berkas di Tab Baru ↗</a>
@@ -317,9 +314,8 @@
                         `;
                     } else {
                         embedHTML = `
-                            <div id="scroll_box_${materi.material_id}" onscroll="cekScrollBawah('${materi.material_id}')" class="mt-4 w-full h-64 md:h-80 rounded-xl overflow-y-auto border border-slate-200 bg-slate-50 shadow-inner relative custom-scroll">
+                            <div class="mt-4 w-full h-64 md:h-80 rounded-xl overflow-y-auto border border-slate-200 bg-slate-50 shadow-inner relative custom-scroll">
                                 <iframe src="${url}" class="w-full h-full border-0"></iframe>
-                                <div class="absolute bottom-2 right-2 bg-slate-800/80 text-white text-[10px] px-2 py-1 rounded pointer-events-none">Gulir sampai bawah untuk verifikasi</div>
                             </div>
                         `;
                     }
@@ -342,7 +338,7 @@
                     actionButton = `
                         <div class="space-y-2 bg-amber-50/50 p-4 rounded-xl border border-amber-100">
                             <div class="flex justify-between items-center text-xs font-semibold text-slate-700">
-                                <span id="label_baca_${materi.material_id}">📖 Syarat Baca: Gulir ke bawah & waktu 65 detik</span>
+                                <span id="label_baca_${materi.material_id}">📖 Syarat Baca: Menunggu waktu membaca selesai (65 detik)</span>
                                 <span id="countdown_baca_${materi.material_id}" class="text-amber-600 font-bold">65 dtk</span>
                             </div>
                             <button id="btn_materi_${materi.material_id}" onclick="tandaiSudahDibaca('${materi.material_id}')" disabled class="w-full bg-slate-300 text-slate-500 font-semibold text-xs py-2 px-4 rounded-xl transition-colors cursor-not-allowed">Tandai Sudah Dibaca ✓ (Belum tuntas)</button>
@@ -507,23 +503,13 @@
             }, 1000);
         }
 
-        function cekScrollBawah(materialId) {
-            const box = document.getElementById(`scroll_box_${materialId}`);
-            if (!box) return;
-            
-            const sudahBawah = (box.scrollTop + box.clientHeight >= box.scrollHeight - 15);
-            if (sudahBawah) {
-                statusScrollBawah[materialId] = true;
-                evaluasiTombolDokumen(materialId);
-            }
-        }
-
+        // Timer baca dokumen (tanpa syarat scroll agar mulus di laptop/iframe)
         function mulaiTimerBacaDoc(materialId, durasiTotal) {
             const lblCountdown = document.getElementById(`countdown_baca_${materialId}`);
             const lblStatus = document.getElementById(`label_baca_${materialId}`);
+            const btnKonfirmasi = document.getElementById(`btn_materi_${materialId}`);
             
             let sisaWaktu = durasiTotal;
-            statusWaktuTuntas[materialId] = false;
 
             let timer = setInterval(() => {
                 sisaWaktu--;
@@ -531,26 +517,16 @@
 
                 if (sisaWaktu <= 0) {
                     clearInterval(timer);
-                    statusWaktuTuntas[materialId] = true;
-                    if (lblStatus) lblStatus.innerText = "📖 Waktu baca tuntas (Pastikan sudah digulir ke bawah)";
+                    if (lblStatus) lblStatus.innerText = "✔ Waktu baca tuntas! Silakan klik tombol di bawah.";
                     if (lblCountdown) lblCountdown.innerText = "OK";
-                    evaluasiTombolDokumen(materialId);
+                    
+                    if (btnKonfirmasi) {
+                        btnKonfirmasi.disabled = false;
+                        btnKonfirmasi.className = "w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs py-2 px-4 rounded-xl transition-colors shadow-xs cursor-pointer";
+                        btnKonfirmasi.innerText = "Tandai Sudah Dibaca ✓";
+                    }
                 }
             }, 1000);
-        }
-
-        function evaluasiTombolDokumen(materialId) {
-            const btnKonfirmasi = document.getElementById(`btn_materi_${materialId}`);
-            const isScrollOk = statusScrollBawah[materialId] === true;
-            const isTimeOk = statusWaktuTuntas[materialId] === true;
-
-            if (btnKonfirmasi && isScrollOk && isTimeOk) {
-                btnKonfirmasi.disabled = false;
-                btnKonfirmasi.className = "w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs py-2 px-4 rounded-xl transition-colors shadow-xs cursor-pointer";
-                btnKonfirmasi.innerText = "Tandai Sudah Dibaca ✓";
-                const wrapper = document.getElementById(`label_baca_${materialId}`);
-                if (wrapper) wrapper.innerText = "✔ Syarat gulir & waktu baca terpenuhi!";
-            }
         }
 
         async function tandaiSudahDibaca(materialId) {
