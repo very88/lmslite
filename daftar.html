@@ -3,55 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pendaftaran LMS</title>
+    <title>Pendaftaran Akun - SMANJO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            background-color: #f8fafc;
-            background-image: radial-gradient(circle at 50% 0%, #ffffff 0%, #f1f5f9 100%);
+            background-color: #0f172a;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(14, 165, 233, 0.05) 0px, transparent 50%);
             color: #334155; 
             min-height: 100vh; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
         }
-        /* Glass panel versi Light Mode */
+
+        /* Ambient Glowing Background Orbs */
+        .ambient-glow {
+            position: absolute;
+            width: 350px;
+            height: 350px;
+            background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+            filter: blur(80px);
+            opacity: 0.35;
+            z-index: -1;
+            border-radius: 50%;
+            animation: floatOrb 10s ease-in-out infinite alternate;
+        }
+        @keyframes floatOrb {
+            0% { transform: translate(-50px, -50px) scale(1); }
+            100% { transform: translate(50px, 50px) scale(1.1); }
+        }
+
+        /* 3D Glassmorphic Card Panel */
         .glass-panel {
             background: rgba(255, 255, 255, 0.85); 
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+            transform: perspective(1000px) rotateX(0deg) rotateY(0deg);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
         }
-        /* Input Styling modern */
+        .glass-panel:hover {
+            transform: perspective(1000px) translateY(-4px) rotateX(1deg) rotateY(-1deg);
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+        }
+
+        /* Modern Inputs with Glow Focus */
         .modern-input {
-            background-color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.9);
             border: 1px solid #cbd5e1;
             color: #1e293b;
-            transition: all 0.2s ease-in-out;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .modern-input:focus {
             outline: none;
+            background-color: #ffffff;
             border-color: #38bdf8;
-            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25), 0 4px 12px rgba(56, 189, 248, 0.15);
+        }
+
+        /* 3D Button Effect */
+        .btn-3d {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4);
+        }
+        .btn-3d:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.6);
+        }
+        .btn-3d:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 8px rgba(56, 189, 248, 0.4);
         }
     </style>
 </head>
-<body class="p-6">
-    <div class="glass-panel rounded-2xl p-8 w-full max-w-md mb-4">
-        <h2 class="text-2xl font-bold mb-6 text-center text-sky-600">Daftar Akun LMS</h2>
-        <form id="formPendaftaran" onsubmit="daftarSiswa(event)">
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Nama Lengkap</label>
-                <input type="text" id="nama_lengkap" required class="w-full rounded-lg px-4 py-2 modern-input">
+<body class="p-6 relative">
+
+    <!-- Ambient Light Decor -->
+    <div class="ambient-glow -top-20 -right-20"></div>
+    <div class="ambient-glow -bottom-20 -left-20" style="animation-delay: -5s;"></div>
+
+    <div class="glass-panel rounded-3xl p-8 w-full max-w-md mb-4 relative z-10">
+        <div class="text-center mb-6">
+            <span class="inline-block bg-sky-100 text-sky-600 font-bold text-[10px] tracking-widest px-3 py-1 rounded-full uppercase mb-2">SMANJO LMS</span>
+            <h2 class="text-2xl font-black text-slate-800 tracking-tight">Daftar Akun Baru</h2>
+        </div>
+
+        <form id="formPendaftaran" onsubmit="daftarSiswa(event)" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Nama Lengkap</label>
+                <input type="text" id="nama_lengkap" required class="w-full rounded-xl px-4 py-2.5 modern-input text-sm font-medium" placeholder="Nama Lengkap Anda">
             </div>
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Email</label>
-                <input type="email" id="email" required class="w-full rounded-lg px-4 py-2 modern-input">
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Email</label>
+                <input type="email" id="email" required class="w-full rounded-xl px-4 py-2.5 modern-input text-sm font-medium" placeholder="nama@email.com">
             </div>
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Password</label>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Password</label>
                 <div class="relative">
-                    <input type="password" id="password" required class="w-full rounded-lg px-4 py-2 pr-10 modern-input">
-                    <!-- Toggle Password Button (Flat & Minimalis) -->
+                    <input type="password" id="password" required class="w-full rounded-xl px-4 py-2.5 pr-10 modern-input text-sm font-medium" placeholder="••••••••">
                     <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-slate-700 transition-colors focus:outline-none cursor-pointer">
                         <svg id="iconMata" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -60,23 +119,29 @@
                     </button>
                 </div>
             </div>
-            <div class="mb-6">
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Peran Pengguna</label>
-                <select id="role" required class="w-full rounded-lg px-4 py-2 modern-input">
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Peran Pengguna</label>
+                <select id="role" required class="w-full rounded-xl px-4 py-2.5 modern-input text-sm font-medium">
                     <option value="Siswa">Siswa</option>
                     <option value="Guru">Guru</option>
                 </select>
             </div>
-            <button type="submit" id="btnSubmit" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer shadow-md">Daftar Sekarang</button>
+
+            <button type="submit" id="btnSubmit" class="w-full bg-gradient-to-r from-sky-400 to-sky-600 hover:from-sky-500 hover:to-sky-700 text-white font-bold py-3 px-4 rounded-xl transition-all cursor-pointer btn-3d text-sm mt-2">
+                Daftar Sekarang
+            </button>
             
-            <p class="mt-4 text-center text-sm font-medium text-slate-500">Sudah punya akun? <a href="index.html" class="text-sky-600 font-bold hover:underline">Masuk</a></p>
+            <p class="mt-4 text-center text-xs font-medium text-slate-500">
+                Sudah punya akun? <a href="index.html" class="text-sky-600 font-bold hover:underline">Masuk</a>
+            </p>
             
-            <div id="statusPesan" class="mt-4 text-center text-sm hidden"></div>
+            <div id="statusPesan" class="mt-4 text-center text-xs font-semibold hidden p-3 rounded-xl"></div>
         </form>
     </div>
 
     <!-- Copyright Footer -->
-    <footer class="text-center text-xs font-semibold text-slate-400 tracking-wide">
+    <footer class="text-center text-xs font-semibold text-slate-400 tracking-wide relative z-10">
         &copy; 2026 Very_Andika All Right Reserved
     </footer>
 
@@ -107,7 +172,8 @@
             const btnSubmit = document.getElementById('btnSubmit');
             const statusDiv = document.getElementById('statusPesan');
             
-            btnSubmit.disabled = true; btnSubmit.innerHTML = 'Memproses...';
+            btnSubmit.disabled = true; 
+            btnSubmit.innerHTML = 'Memproses...';
             statusDiv.classList.add('hidden');
 
             const payloadData = {
@@ -128,19 +194,20 @@
                 statusDiv.classList.remove('hidden');
                 if (result.status === 'success') {
                     statusDiv.innerHTML = `✅ ${result.message}`;
-                    statusDiv.className = "mt-4 text-center text-sm font-semibold text-emerald-600";
+                    statusDiv.className = "mt-4 text-center text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-xl";
                     document.getElementById('formPendaftaran').reset();
-                    document.getElementById('password').type = 'password'; // Reset ikon mata
+                    document.getElementById('password').type = 'password'; 
                 } else {
                     statusDiv.innerHTML = `❌ ${result.message}`;
-                    statusDiv.className = "mt-4 text-center text-sm font-semibold text-rose-600";
+                    statusDiv.className = "mt-4 text-center text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl";
                 }
             } catch (error) {
                 statusDiv.classList.remove('hidden');
                 statusDiv.innerHTML = `❌ Terjadi kesalahan jaringan.`;
-                statusDiv.className = "mt-4 text-center text-sm font-semibold text-rose-600";
+                statusDiv.className = "mt-4 text-center text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl";
             } finally {
-                btnSubmit.disabled = false; btnSubmit.innerHTML = 'Daftar Sekarang';
+                btnSubmit.disabled = false; 
+                btnSubmit.innerHTML = 'Daftar Sekarang';
             }
         }
     </script>
