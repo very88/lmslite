@@ -725,7 +725,13 @@
 
             container.innerHTML = '';
             globalMaterials.forEach(materi => {
-                const tgl = new Date(materi.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' });
+                let tgl = "-";
+                if (materi.created_at) {
+                    let d = new Date(materi.created_at);
+                    if (!isNaN(d.getTime())) {
+                        tgl = d.toLocaleDateString('id-ID', { dateStyle: 'long' });
+                    }
+                }
                 
                 let linkHTML = '';
                 if (materi.file_url) {
@@ -814,20 +820,28 @@
 
             container.innerHTML = '';
             globalAssignments.forEach(tugas => {
-                const dateObj = new Date(tugas.tenggat_waktu);
-                const tglFormat = dateObj.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
-                const isoDate = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                let tglFormat = "-";
+                let isoDate = "";
+                if (tugas.tenggat_waktu) {
+                    const dateObj = new Date(tugas.tenggat_waktu);
+                    if (!isNaN(dateObj.getTime())) {
+                        tglFormat = dateObj.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
+                        isoDate = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                    }
+                }
                 
                 let badgeJadwal = `<span class="bg-emerald-50 text-emerald-600 font-medium text-xs px-2 py-1 rounded border border-emerald-200 inline-block mt-2">🚀 Sudah Rilis</span>`;
                 let isoPublish = '';
                 let isScheduled = false;
 
-                if (tugas.waktu_publish && tugas.waktu_publish.trim() !== '') {
+                if (tugas.waktu_publish && String(tugas.waktu_publish).trim() !== '') {
                     const pubDate = new Date(tugas.waktu_publish);
-                    isoPublish = new Date(pubDate.getTime() - (pubDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-                    if (pubDate > new Date()) {
-                        isScheduled = true;
-                        badgeJadwal = `<span class="bg-amber-50 text-amber-600 font-medium text-xs px-2 py-1 rounded border border-amber-200 inline-block mt-2">📅 Dijadwalkan</span>`;
+                    if (!isNaN(pubDate.getTime())) {
+                        isoPublish = new Date(pubDate.getTime() - (pubDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                        if (pubDate > new Date()) {
+                            isScheduled = true;
+                            badgeJadwal = `<span class="bg-amber-50 text-amber-600 font-medium text-xs px-2 py-1 rounded border border-amber-200 inline-block mt-2">📅 Dijadwalkan</span>`;
+                        }
                     }
                 }
 
@@ -892,8 +906,9 @@
                     `;
                 }
 
-                let instruksiHTML = (tugas.deskripsi || tugas.instruksi) ? `
-                    <p class="text-xs text-slate-600 mt-1 bg-slate-50 p-2 rounded-lg border border-slate-100 whitespace-pre-line"><strong>Instruksi:</strong> ${tugas.deskripsi || tugas.instruksi}</p>
+                let instruksiText = tugas.deskripsi || tugas.instruksi || '';
+                let instruksiHTML = instruksiText ? `
+                    <p class="text-xs text-slate-600 mt-1 bg-slate-50 p-2 rounded-lg border border-slate-100 whitespace-pre-line"><strong>Instruksi:</strong> ${instruksiText}</p>
                 ` : '';
 
                 container.innerHTML += `
