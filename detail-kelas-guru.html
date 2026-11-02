@@ -376,7 +376,8 @@
                                 </div>
                                 <p class="text-xs text-slate-500 mt-1">${m.deskripsi || 'Tidak ada deskripsi.'}</p>
                             </div>
-                            <div class="flex gap-1.5 flex-shrink-0">
+                            <div class="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
+                                <button onclick="bukaModalTransfer('materi', '${encodeURIComponent(m.judul_materi)}', '${encodeURIComponent(m.deskripsi || '')}', '${encodeURIComponent(m.link_materi || '')}', '')" class="text-xs bg-sky-100 text-sky-700 hover:bg-sky-200 px-2.5 py-1 rounded-lg font-semibold transition-colors">📋 Salin ke Kelas</button>
                                 <button onclick="bukaModalEditMateri('${m.material_id}', '${encodeURIComponent(m.judul_materi)}', '${encodeURIComponent(m.deskripsi || '')}', '${m.status || 'tampil'}', '${encodeURIComponent(m.link_materi || '')}')" class="text-xs bg-amber-100 text-amber-700 hover:bg-amber-200 px-2.5 py-1 rounded-lg font-semibold transition-colors">Edit</button>
                                 <button id="btnWa_materi_${m.material_id}" onclick="kirimWaManual('materi', 'materi_${m.material_id}', '${encodeURIComponent(m.judul_materi)}')" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-semibold transition-colors">📱 Kirim WA</button>
                             </div>
@@ -405,7 +406,8 @@
                                 <h3 class="font-bold text-slate-800 text-base">${t.judul_tugas}</h3>
                                 <p class="text-xs text-slate-500 mt-1">🕒 Tenggat: <span class="font-semibold text-slate-700">${deadlineStr}</span></p>
                             </div>
-                            <div class="flex gap-1.5 flex-shrink-0">
+                            <div class="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
+                                <button onclick="bukaModalTransfer('tugas', '${encodeURIComponent(t.judul_tugas)}', '', '', '${t.tenggat_waktu || ''}')" class="text-xs bg-sky-100 text-sky-700 hover:bg-sky-200 px-2.5 py-1 rounded-lg font-semibold transition-colors">📋 Salin ke Kelas</button>
                                 <button onclick="bukaModalEditTugas('${t.assignment_id}', '${encodeURIComponent(t.judul_tugas)}', '${t.tenggat_waktu || ''}', '${t.prasyarat_materi_ids || ''}')" class="text-xs bg-amber-100 text-amber-700 hover:bg-amber-200 px-2.5 py-1 rounded-lg font-semibold transition-colors">Edit</button>
                                 <button id="btnWa_tugas_${t.assignment_id}" onclick="kirimWaManual('tugas', 'tugas_${t.assignment_id}', '${encodeURIComponent(t.judul_tugas)}')" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-semibold transition-colors">📱 Kirim WA</button>
                             </div>
@@ -657,6 +659,77 @@
             finally { btn.disabled = false; btn.innerText = 'Simpan'; }
         }
 
+        async function bukaModalTransfer(tipe, judul, deskripsi, link, tenggat) {
+            document.getElementById('transfer_tipe').value = tipe;
+            document.getElementById('transfer_judul').value = decodeURIComponent(judul);
+            document.getElementById('transfer_deskripsi').value = decodeURIComponent(deskripsi);
+            document.getElementById('transfer_link').value = decodeURIComponent(link);
+            document.getElementById('transfer_tenggat').value = tenggat;
+            document.getElementById('transferModalTitle').innerText = `Salin ${tipe === 'materi' ? 'Materi' : 'Tugas'} ke Kelas Lain`;
+
+            const select = document.getElementById('select_kelas_tujuan');
+            select.innerHTML = '<option value="">Memuat daftar kelas...</option>';
+            document.getElementById('modalTransfer').classList.remove('hidden');
+
+            try {
+                const res = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_teacher_classes', teacher_name: currentUser.nama })
+                });
+                const result = await res.json();
+                if (result.status === 'success' && result.data.length > 0) {
+                    let options = '<option value="">-- Pilih Kelas Tujuan --</option>';
+                    result.data.forEach(c => {
+                        if (c.class_id !== classId) {
+                            options += `<option value="${c.class_id}">${c.nama_kelas}</option>`;
+                        }
+                    });
+                    select.innerHTML = options;
+                } else {
+                    select.innerHTML = '<option value="">Tidak ada kelas lain tersedia</option>';
+                }
+            } catch (e) {
+                select.innerHTML = '<option value="">Gagal memuat kelas</option>';
+            }
+        }
+
+        async function prosesTransfer(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnProsesTransfer');
+            const targetClassId = document.getElementById('select_kelas_tujuan').value;
+            if (!targetClassId) return alert('Pilih kelas tujuan.');
+
+            btn.disabled = true;
+            btn.innerText = 'Menyalin...';
+
+            const payload = {
+                action: 'create_post',
+                class_id: targetClassId,
+                tipe: document.getElementById('transfer_tipe').value,
+                judul: document.getElementById('transfer_judul').value,
+                deskripsi: document.getElementById('transfer_deskripsi').value,
+                link: document.getElementById('transfer_link').value,
+                status_materi: 'tampil',
+                tenggat_waktu: document.getElementById('transfer_tenggat').value
+            };
+
+            try {
+                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    alert('Konten berhasil disalin ke kelas tujuan!');
+                    document.getElementById('modalTransfer').classList.add('hidden');
+                } else {
+                    alert(`Gagal: ${result.message}`);
+                }
+            } catch (err) {
+                alert('Terjadi kesalahan jaringan.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Transfer';
+            }
+        }
+
         function bukaModalDaftarSiswa() {
             const container = document.getElementById('listSiswaContainer');
             const info = document.getElementById('infoJumlahSiswa');
@@ -698,6 +771,22 @@
                 container.innerHTML = html;
             }
             document.getElementById('modalAbsensi').classList.remove('hidden');
+        }
+
+        function downloadRekapAbsenExcel() {
+            if (globalAttendance.length === 0) {
+                alert("Belum ada data absensi untuk diunduh.");
+                return;
+            }
+            let excelData = [["Nama Siswa", "Waktu Kehadiran", "Status"]];
+            globalAttendance.forEach(a => {
+                excelData.push([a.student_name, a.waktu || '-', a.status || 'Hadir']);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Rekap Absen");
+            XLSX.writeFile(wb, `Rekap_Absen_${namaKelas.replace(/\s+/g, '_')}.xlsx`);
         }
 
         function bukaModalPertanyaanSiswa() {
