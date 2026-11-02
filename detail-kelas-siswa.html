@@ -37,7 +37,6 @@
             box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
         }
 
-        /* Nonaktifkan seleksi teks khusus kotak esai aman */
         .secure-essay {
             -webkit-user-select: none;
             -moz-user-select: none;
@@ -170,6 +169,18 @@
             muatDataRuangKelasSiswa(); 
         };
 
+        // Fungsi Ekstraksi Direct Link Google Drive murni
+        function dapatkanDirectDriveUrl(url) {
+            if (!url) return '';
+            if (url.includes('drive.google.com')) {
+                let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+                }
+            }
+            return url;
+        }
+
         async function muatDataRuangKelasSiswa() {
             try {
                 const res = await fetch(scriptURL, { 
@@ -277,18 +288,9 @@
                 if (materi.file_url) {
                     let url = materi.file_url;
                     let lowerUrl = url.toLowerCase();
+                    let directWebUrl = dapatkanDirectDriveUrl(url);
 
-                    // Format URL agar membuka halaman preview bersih langsung (bukan halaman Google Drive viewer)
-                    let directWebUrl = url;
-                    if (url.includes('drive.google.com')) {
-                        if (url.includes('/view') || url.includes('/edit')) {
-                            directWebUrl = url.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview');
-                        } else if (!url.includes('/preview')) {
-                            directWebUrl = url + (url.includes('?') ? '&' : '?') + 'usp=sharing';
-                        }
-                    }
-
-                    // 1. Cek YouTube
+                    // 1. YouTube
                     if (url.includes('youtube.com') || url.includes('youtu.be')) {
                         isYouTube = true;
                         let videoId = '';
@@ -310,7 +312,7 @@
                             `;
                         }
                     } 
-                    // 2. Cek File HTML (Mendukung URL .html, .htm, atau URL Drive dengan metadata HTML)
+                    // 2. Berkas HTML / Web Interaktif
                     else if (
                         lowerUrl.endsWith('.html') || 
                         lowerUrl.includes('.html?') || 
@@ -329,18 +331,19 @@
                             </div>
                         `;
                     } 
-                    // 3. Dokumen Google Drive Non-HTML
+                    // 3. Google Drive Dokumen Non-HTML
                     else if (url.includes('drive.google.com')) {
+                        let previewUrl = url.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview');
                         embedHTML = `
                             <div class="mt-4 w-full h-72 md:h-[480px] rounded-xl overflow-y-auto border border-slate-200 bg-slate-50 shadow-inner relative custom-scroll">
-                                <iframe src="${directWebUrl}" class="w-full h-full border-0"></iframe>
+                                <iframe src="${previewUrl}" class="w-full h-full border-0"></iframe>
                             </div>
                             <div class="mt-2 text-right flex flex-wrap justify-end gap-2">
-                                <a href="${directWebUrl}" target="_blank" class="text-xs font-semibold text-sky-600 hover:underline inline-flex items-center gap-1">🌐 Buka Berkas di Tab Baru ↗</a>
+                                <a href="${directWebUrl}" target="_blank" class="text-xs font-semibold text-sky-600 hover:underline inline-flex items-center gap-1">🌐 Buka Berkas Langsung ↗</a>
                             </div>
                         `;
                     } 
-                    // 4. File / Link Lainnya
+                    // 4. File / Link Umum
                     else {
                         embedHTML = `
                             <div class="mt-4 w-full h-64 md:h-80 rounded-xl overflow-y-auto border border-slate-200 bg-slate-50 shadow-inner relative custom-scroll">
@@ -509,7 +512,7 @@
         }
 
         function mulaiTimerVideo(materialId, durasiTotal) {
-            const btnMulai = document.getElementById(`btn_mulai_tonton_${materialId}`);
+            const btnMulai = document.getElementById(`btn_mulai_tonton_${materi.material_id}`);
             const btnKonfirmasi = document.getElementById(`btn_materi_${materialId}`);
             const lblCountdown = document.getElementById(`countdown_${materialId}`);
             const lblStatus = document.getElementById(`label_timer_${materialId}`);
@@ -535,7 +538,6 @@
             }, 1000);
         }
 
-        // Timer baca dokumen (tanpa syarat scroll agar mulus di laptop/iframe)
         function mulaiTimerBacaDoc(materialId, durasiTotal) {
             const lblCountdown = document.getElementById(`countdown_baca_${materialId}`);
             const lblStatus = document.getElementById(`label_baca_${materialId}`);
@@ -651,7 +653,6 @@
                 let tglFormat = deadlineDate.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
                 let bgStatus = isSubmitted ? "bg-emerald-50/50 border-emerald-200" : (isExpired ? "bg-rose-50/50 border-rose-200" : "bg-white border-slate-200");
                 
-                // ⭐ Validasi Multi-Prasyarat Materi untuk Tugas Ini
                 let reqIds = (tugas.required_material_id && tugas.required_material_id.trim() !== '') ? tugas.required_material_id.split(',').map(s => s.trim()) : [];
                 let studentReadMaterialIds = globalReads.filter(r => r.student_id === currentUser.user_id).map(r => r.material_id);
                 
@@ -684,16 +685,7 @@
                     let lowerFileUrl = fileUrl.toLowerCase();
                     let isHtmlFile = lowerFileUrl.endsWith('.html') || lowerFileUrl.includes('.html?') || lowerFileUrl.endsWith('.htm');
                     
-                    // Format URL preview bersih khusus untuk file Google Drive di penugasan
-                    let directTaskUrl = fileUrl;
-                    if (fileUrl.includes('drive.google.com')) {
-                        if (fileUrl.includes('/view') || fileUrl.includes('/edit')) {
-                            directTaskUrl = fileUrl.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview');
-                        } else if (!fileUrl.includes('/preview')) {
-                            directTaskUrl = fileUrl + (fileUrl.includes('?') ? '&' : '?') + 'usp=sharing';
-                        }
-                    }
-
+                    let directTaskUrl = dapatkanDirectDriveUrl(fileUrl);
                     let btnText = isHtmlFile ? "🌐 Buka Website / Berkas ↗" : "Buka Berkas ↗";
                     
                     lampiranTugasGuru = `
