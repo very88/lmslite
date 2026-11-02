@@ -332,6 +332,32 @@
                     ? `<span class="bg-emerald-100 text-emerald-700 font-bold text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-300">✓ ${tugas.status}</span>`
                     : `<span class="bg-rose-100 text-rose-700 font-bold text-[10px] px-2.5 py-0.5 rounded-full border border-rose-300">⏳ Belum Dikumpulkan</span>`;
 
+                // TAMPILAN BERKAS / LAMPIRAN SOAL DARI GURU
+                let linkAttachment = '';
+                if (tugas.file_url && tugas.file_url.trim() !== '' && tugas.file_url !== 'Jawaban Esai Langsung (LMS)') {
+                    const fileUrl = tugas.file_url;
+                    const isHtmlFile = fileUrl.toLowerCase().includes('.html') || fileUrl.toLowerCase().includes('.htm');
+                    
+                    const previewBtn = isHtmlFile 
+                        ? `<a href="${fileUrl}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-md transition-colors">👁️ Preview HTML</a>`
+                        : '';
+
+                    linkAttachment = `
+                        <div class="mt-2 p-2.5 bg-sky-50/80 rounded-xl border border-sky-200 flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sky-600 text-sm">📎</span>
+                                <span class="text-xs font-semibold text-slate-700">Lampiran / Berkas Soal:</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${previewBtn}
+                                <a href="${fileUrl}" target="_blank" class="text-xs font-bold text-white bg-sky-500 hover:bg-sky-600 px-3 py-1 rounded-md shadow-xs transition-colors inline-flex items-center gap-1">
+                                    Buka Berkas ↗
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 let prasyaratTerkunci = false;
                 let prasyaratInfo = '';
 
@@ -348,7 +374,7 @@
                         });
 
                         prasyaratInfo = `
-                            <div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs text-amber-800 space-y-1">
+                            <div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs text-amber-800 space-y-1 mt-2">
                                 <strong class="flex items-center gap-1 text-amber-900">🔒 Tugas Terkunci (Materi Prasyarat)</strong>
                                 <p class="text-[11px]">Anda harus membaca materi berikut terlebih dahulu sebelum dapat mengerjakan tugas ini:</p>
                                 <ul class="list-disc list-inside text-[11px] font-semibold text-amber-700">
@@ -357,21 +383,6 @@
                             </div>
                         `;
                     }
-                }
-
-                let linkAttachment = '';
-                if (tugas.file_url) {
-                    const isHtmlFile = tugas.file_url.toLowerCase().includes('.html') || tugas.file_url.toLowerCase().includes('.htm');
-                    const previewBtn = isHtmlFile 
-                        ? `<a href="${tugas.file_url}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:underline">👁️ Preview HTML Lampiran</a>`
-                        : '';
-
-                    linkAttachment = `
-                        <div class="flex items-center gap-3 mt-1">
-                            <a href="${tugas.file_url}" target="_blank" class="text-xs font-semibold text-sky-600 hover:underline">🔗 Lampiran Soal / Petunjuk Guru</a>
-                            ${previewBtn}
-                        </div>
-                    `;
                 }
 
                 let btnAksi = '';
@@ -384,7 +395,7 @@
                 }
 
                 let feedbackHTML = (tugas.nilai && tugas.nilai !== '-') ? `
-                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-xs space-y-1">
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-xs space-y-1 mt-2">
                         <div class="flex justify-between items-center">
                             <strong class="text-emerald-800">📊 Nilai Guru:</strong>
                             <span class="text-sm font-bold text-emerald-600">${tugas.nilai} / 100</span>
